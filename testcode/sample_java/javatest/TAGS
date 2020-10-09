@@ -1,0 +1,21 @@
+
+sample1.java,809
+package org.jboss.netty.handler.codec.http;org.jboss.netty.handler.codec.http16,635
+public class CookieEncoder {CookieEncoder52,1980
+  private final Set<Cookie> cookies = new TreeSet<Cookie>();cookies62,2064
+  private final boolean server;server63,2125
+  private final boolean strict;strict64,2157
+  public CookieEncoder(boolean server) {CookieEncoder73,2462
+  public CookieEncoder(boolean server, boolean strict) {CookieEncoder86,2941
+  public void addCookie(String name, String value) {addCookie95,3162
+  public void addCookie(Cookie cookie) {addCookie102,3337
+  static public void test(Cookie cookie) {test105,3407
+  public String encode() {encode116,3769
+  private String encodeServerSide() {encodeServerSide127,3967
+  private String encodeClientSide() {encodeClientSide138,4395
+
+sample2.java,182
+public class Sample2 {Sample21,0
+  private final boolean test;test2,23
+  public Sample2(boolean test) {Sample24,54
+  public void sampleMethod(String name) {sampleMethod8,114

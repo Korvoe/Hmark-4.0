@@ -1,0 +1,164 @@
+# LogicTest: local
+
+statement ok
+CREATE TABLE uvw (
+  u INT,
+  v INT,
+  w INT,
+  INDEX (u,v,w)
+)
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM uvw WHERE (u, v, w) >= (1, 2, 3) ORDER BY u, v, w
+----
+·     distribution  local              ·          ·
+·     vectorized    true               ·          ·
+scan  ·             ·                  (u, v, w)  +u,+v,+w
+·     table         uvw@uvw_u_v_w_idx  ·          ·
+·     spans         /1/2/3-            ·          ·
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM uvw WHERE (u, v, w) > (2, 1, 1) ORDER BY u, v, w
+----
+·     distribution  local              ·          ·
+·     vectorized    true               ·          ·
+scan  ·             ·                  (u, v, w)  +u,+v,+w
+·     table         uvw@uvw_u_v_w_idx  ·          ·
+·     spans         /2/1/2-            ·          ·
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM uvw WHERE (u, v, w) <= (2, 3, 1) ORDER BY u, v, w
+----
+·          distribution  local                   ·          ·
+·          vectorized    true                    ·          ·
+filter     ·             ·                       (u, v, w)  +u,+v,+w
+ │         filter        (u, v, w) <= (2, 3, 1)  ·          ·
+ └── scan  ·             ·                       (u, v, w)  +u,+v,+w
+·          table         uvw@uvw_u_v_w_idx       ·          ·
+·          spans         /!NULL-/2/3/2           ·          ·
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM uvw WHERE (u, v, w) < (2, 2, 2) ORDER BY u, v, w
+----
+·          distribution  local                  ·          ·
+·          vectorized    true                   ·          ·
+filter     ·             ·                      (u, v, w)  +u,+v,+w
+ │         filter        (u, v, w) < (2, 2, 2)  ·          ·
+ └── scan  ·             ·                      (u, v, w)  +u,+v,+w
+·          table         uvw@uvw_u_v_w_idx      ·          ·
+·          spans         /!NULL-/2/2/2          ·          ·
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM uvw WHERE (u, v, w) != (1, 2, 3) ORDER BY u, v, w
+----
+·          distribution  local                   ·          ·
+·          vectorized    true                    ·          ·
+filter     ·             ·                       (u, v, w)  +u,+v,+w
+ │         filter        (u, v, w) != (1, 2, 3)  ·          ·
+ └── scan  ·             ·                       (u, v, w)  +u,+v,+w
+·          table         uvw@uvw_u_v_w_idx       ·          ·
+·          spans         -/1/2/3 /1/2/4-         ·          ·
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM uvw WHERE (u, v, w) >= (1, NULL, 3) ORDER BY u, v, w
+----
+·     distribution  local              ·          ·
+·     vectorized    true               ·          ·
+scan  ·             ·                  (u, v, w)  +u,+v,+w
+·     table         uvw@uvw_u_v_w_idx  ·          ·
+·     spans         /2-                ·          ·
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM uvw WHERE (u, v, w) < (2, NULL, 3) ORDER BY u, v, w
+----
+·     distribution  local              ·          ·
+·     vectorized    true               ·          ·
+scan  ·             ·                  (u, v, w)  +u,+v,+w
+·     table         uvw@uvw_u_v_w_idx  ·          ·
+·     spans         /!NULL-/2          ·          ·
+
+statement ok
+DROP TABLE uvw
+
+# Regression test for #6390.
+statement ok
+CREATE TABLE abc (a INT, b INT, c INT, INDEX(a, b))
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM abc WHERE (a, b, c) > (1, 2, 3) AND (a,b,c) < (8, 9, 10)
+----
+·                distribution  local                                                 ·              ·
+·                vectorized    true                                                  ·              ·
+filter           ·             ·                                                     (a, b, c)      ·
+ │               filter        ((a, b, c) > (1, 2, 3)) AND ((a, b, c) < (8, 9, 10))  ·              ·
+ └── index-join  ·             ·                                                     (a, b, c)      ·
+      │          table         abc@primary                                           ·              ·
+      │          key columns   rowid                                                 ·              ·
+      └── scan   ·             ·                                                     (a, b, rowid)  ·
+·                table         abc@abc_a_b_idx                                       ·              ·
+·                spans         /1/2-/8/10                                            ·              ·
+
+statement ok
+DROP TABLE abc
+
+statement ok
+CREATE TABLE abc (a INT, b INT, c INT, INDEX(a, b DESC, c))
+
+query TTTTT
+EXPLAIN (VERBOSE) SELECT * FROM abc WHERE (a, b, c) > (1, 2, 3)
+----
+·          distribution  local                  ·          ·
+·          vectorized    true                   ·          ·
+filter     ·             ·                      (a, b, c)  ·
+ │         filter        (a, b, c) > (1, 2, 3)  ·          ·
+ └── scan  ·             ·                      (a, b, c)  ·
+·          table         abc@abc_a_b_c_idx      ·          ·
+·          spans         /1-                    ·          ·
+
+statement ok
+DROP TABLE abc
+
+statement ok
+CREATE TABLE kv (k INT PRIMARY KEY, v INT)
+
+# Regression test for #27398.
+# Check that tuple type includes labels.
+query TTTTT
+EXPLAIN (VERBOSE, TYPES) SELECT x FROM (SELECT (row(v,v,v) AS a,b,c) AS x FROM kv)
+----
+·          distribution  local                                                                               ·                                        ·
+·          vectorized    true                                                                                ·                                        ·
+render     ·             ·                                                                                   (x tuple{int AS a, int AS b, int AS c})  ·
+ │         render 0      ((((v)[int], (v)[int], (v)[int]) AS a, b, c))[tuple{int AS a, int AS b, int AS c}]  ·                                        ·
+ └── scan  ·             ·                                                                                   (v int)                                  ·
+·          table         kv@primary                                                                          ·                                        ·
+·          spans         FULL SCAN                                                                           ·                                        ·
+
+query TTTTT
+EXPLAIN (VERBOSE, TYPES) SELECT (x).a, (x).b, (x).c FROM (SELECT (row(v,v,v) AS a,b,c) AS x FROM kv)
+----
+·               distribution  local                                                                               ·                                        ·
+·               vectorized    true                                                                                ·                                        ·
+render          ·             ·                                                                                   (a int, b int, c int)                    ·
+ │              render 0      (((x)[tuple{int AS a, int AS b, int AS c}]).a)[int]                                 ·                                        ·
+ │              render 1      (((x)[tuple{int AS a, int AS b, int AS c}]).b)[int]                                 ·                                        ·
+ │              render 2      (((x)[tuple{int AS a, int AS b, int AS c}]).c)[int]                                 ·                                        ·
+ └── render     ·             ·                                                                                   (x tuple{int AS a, int AS b, int AS c})  ·
+      │         render 0      ((((v)[int], (v)[int], (v)[int]) AS a, b, c))[tuple{int AS a, int AS b, int AS c}]  ·                                        ·
+      └── scan  ·             ·                                                                                   (v int)                                  ·
+·               table         kv@primary                                                                          ·                                        ·
+·               spans         FULL SCAN                                                                           ·                                        ·
+
+query TTTTT
+EXPLAIN (VERBOSE, TYPES) SELECT (x).e, (x).f, (x).g
+FROM (
+  SELECT ((1,'2',true) AS e,f,g) AS x
+)
+----
+·       distribution   local             ·                          ·
+·       vectorized     false             ·                          ·
+values  ·              ·                 (e int, f string, g bool)  ·
+·       size           3 columns, 1 row  ·                          ·
+·       row 0, expr 0  (1)[int]          ·                          ·
+·       row 0, expr 1  ('2')[string]     ·                          ·
+·       row 0, expr 2  (true)[bool]      ·                          ·

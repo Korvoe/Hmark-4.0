@@ -1,0 +1,72 @@
+# LogicTest: local
+
+# EXPLAIN test cases for using invertedJoiner on an inverted geospatial index.
+
+statement ok
+CREATE TABLE ltable(
+  lk int primary key,
+  geom geometry
+)
+
+statement ok
+CREATE TABLE rtable(
+  rk1 int,
+  geom geometry,
+  rk2 string,
+  PRIMARY KEY (rk1, rk2),
+  INVERTED INDEX geom_index(geom)
+)
+
+query T
+SELECT url FROM [EXPLAIN (DISTSQL)
+SELECT lk, rk1 FROM ltable JOIN rtable@geom_index ON ST_Intersects(ltable.geom, rtable.geom)]
+----
+https://cockroachdb.github.io/distsqlplan/decode.html#eJyUkkGP0zAQhe_8itGcttLANsnCwScjKFJWpVnaHpBW0Soko8o0tYPtoKKq_x3Frti20Iq9ZcbvzXx-8Q7djxYFLibTyYcl9LaFT_PiMzxOvj5M3-czuPmYL5aLL9MRHCTtmsCukyhrffWtZbgv8hnY8C1XbDZPSje8hWIGzj8p7dk6rr27ifI3g4QO-lCMSiTUpuFZtWGH4hETLAk7a2p2ztihtQuCvNmiGBMq3fV-aJeEtbGMYode-ZZR4HKYO-eqYXs7RsKGfaXaMDYCyM6qTWV_IeGiq7QT8BrLPaHp_fNU56sVo0j29P-bc_2Trefm3ijN9jY5Xf5XQEh_HPDdKA1GC5DpUXuy7exZhjIlkHcjJCx6L0AmJFOSGcm3F--QvuQOA_shvPSf_M_hTY1Z990RekbybgA7_--B-d0Jc3aRNnsJ7ZxdZ7TjE9JLk8f7kpCbFcf35Exva36wpg5rYlkEX2g07Hw8TWKR63g0AB6bk6vm9Lo5vWrOzszl_tXvAAAA__81FjZ7
+
+query TTT
+EXPLAIN SELECT lk, rk1, rk2, rtable.geom
+FROM ltable JOIN rtable@geom_index ON ST_Intersects(ltable.geom, rtable.geom)
+----
+·                             distribution           local
+·                             vectorized             true
+render                        ·                      ·
+ └── lookup-join              ·                      ·
+      │                       table                  rtable@primary
+      │                       type                   inner
+      │                       equality               (rk1, rk2) = (rk1, rk2)
+      │                       equality cols are key  ·
+      │                       parallel               ·
+      │                       pred                   st_intersects(geom, geom)
+      └── render              ·                      ·
+           └── inverted-join  ·                      ·
+                │             table                  rtable@geom_index
+                │             type                   inner
+                │             ·                      st_intersects(@2, @4)
+                │             parallel               ·
+                └── scan      ·                      ·
+·                             table                  ltable@primary
+·                             spans                  FULL SCAN
+
+query TTT
+EXPLAIN SELECT lk, rk1, rk2, rtable.geom
+FROM ltable JOIN rtable@geom_index ON ST_DWithin(ltable.geom, rtable.geom, 5)
+----
+·                             distribution           local
+·                             vectorized             true
+render                        ·                      ·
+ └── lookup-join              ·                      ·
+      │                       table                  rtable@primary
+      │                       type                   inner
+      │                       equality               (rk1, rk2) = (rk1, rk2)
+      │                       equality cols are key  ·
+      │                       parallel               ·
+      │                       pred                   st_dwithin(geom, geom, 5.0)
+      └── render              ·                      ·
+           └── inverted-join  ·                      ·
+                │             table                  rtable@geom_index
+                │             type                   inner
+                │             ·                      st_dwithin(@2, @4, 5.0)
+                │             parallel               ·
+                └── scan      ·                      ·
+·                             table                  ltable@primary
+·                             spans                  FULL SCAN

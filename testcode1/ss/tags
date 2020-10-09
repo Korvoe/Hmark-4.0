@@ -1,0 +1,43 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+ComputeSplitKey	system.go	/^func (s *SystemConfig) ComputeSplitKey($/;"	f	struct:config.SystemConfig	typeref:typename:(rr roachpb.RKey)
+DecodeKeyIntoZoneIDAndSuffix	system.go	/^func DecodeKeyIntoZoneIDAndSuffix(key roachpb.RKey) (id SystemTenantObjectID, keySuffix []byte) /;"	f	package:config	typeref:typename:(id SystemTenantObjectID, keySuffix []byte)
+DefaultZoneConfig	system.go	/^	DefaultZoneConfig *zonepb.ZoneConfig$/;"	m	struct:config.SystemConfig	typeref:typename:*zonepb.ZoneConfig
+Equal	system.go	/^func (s *SystemConfig) Equal(other *SystemConfigEntries) bool {$/;"	f	struct:config.SystemConfig	typeref:typename:bool
+GetIndex	system.go	/^func (s *SystemConfig) GetIndex(key roachpb.Key) (int, bool) {$/;"	f	struct:config.SystemConfig	typeref:typename:(int, bool)
+GetLargestObjectID	system.go	/^func (s *SystemConfig) GetLargestObjectID($/;"	f	struct:config.SystemConfig	typeref:typename:(SystemTenantObjectID, error)
+GetValue	system.go	/^func (s *SystemConfig) GetValue(key roachpb.Key) *roachpb.Value {$/;"	f	struct:config.SystemConfig	typeref:typename:*roachpb.Value
+GetZoneConfigForKey	system.go	/^func (s *SystemConfig) GetZoneConfigForKey(key roachpb.RKey) (*zonepb.ZoneConfig, error) {$/;"	f	struct:config.SystemConfig	typeref:typename:(*zonepb.ZoneConfig, error)
+GetZoneConfigForObject	system.go	/^func (s *SystemConfig) GetZoneConfigForObject($/;"	f	struct:config.SystemConfig	typeref:typename:(*zonepb.ZoneConfig, error)
+NeedsSplit	system.go	/^func (s *SystemConfig) NeedsSplit(ctx context.Context, startKey, endKey roachpb.RKey) bool {$/;"	f	struct:config.SystemConfig	typeref:typename:bool
+NewSystemConfig	system.go	/^func NewSystemConfig(defaultZoneConfig *zonepb.ZoneConfig) *SystemConfig {$/;"	f	package:config	typeref:typename:*SystemConfig
+StaticSplits	system.go	/^func StaticSplits() []roachpb.RKey {$/;"	f	package:config	typeref:typename:[]roachpb.RKey
+SystemConfig	system.go	/^type SystemConfig struct {$/;"	s	package:config
+SystemConfigEntries	system.go	/^	SystemConfigEntries$/;"	M	struct:config.SystemConfig	typeref:typename:SystemConfigEntries
+SystemTenantObjectID	system.go	/^type SystemTenantObjectID uint32$/;"	t	package:config	typeref:typename:uint32
+ZoneConfigHook	system.go	/^	ZoneConfigHook zoneConfigHook$/;"	v	package:config	typeref:type:zoneConfigHook
+combined	system.go	/^	combined *zonepb.ZoneConfig$/;"	m	struct:config.zoneEntry	typeref:typename:*zonepb.ZoneConfig
+config	system.go	/^package config$/;"	p
+get	system.go	/^func (s *SystemConfig) get(key roachpb.Key) *roachpb.KeyValue {$/;"	f	struct:config.SystemConfig	typeref:typename:*roachpb.KeyValue
+getIndexBound	system.go	/^func (s *SystemConfig) getIndexBound(key roachpb.Key) int {$/;"	f	struct:config.SystemConfig	typeref:typename:int
+getSystemTenantDesc	system.go	/^func (s *SystemConfig) getSystemTenantDesc(key roachpb.Key) *roachpb.Value {$/;"	f	struct:config.SystemConfig	typeref:typename:*roachpb.Value
+getZoneConfigForKey	system.go	/^func (s *SystemConfig) getZoneConfigForKey($/;"	f	struct:config.SystemConfig	typeref:typename:(*zonepb.ZoneConfig, error)
+getZoneEntry	system.go	/^func (s *SystemConfig) getZoneEntry(id SystemTenantObjectID) (zoneEntry, error) {$/;"	f	struct:config.SystemConfig	typeref:typename:(zoneEntry, error)
+isPseudoTableID	system.go	/^func isPseudoTableID(id uint32) bool {$/;"	f	package:config	typeref:typename:bool
+mu	system.go	/^	mu                struct {$/;"	m	struct:config.SystemConfig	typeref:typename:struct { syncutil.RWMutex; zoneCache map[SystemTenantObjectID]zoneEntry; shouldSplitCache map[SystemTenantObjectID]bool; }
+placeholder	system.go	/^	placeholder *zonepb.ZoneConfig$/;"	m	struct:config.zoneEntry	typeref:typename:*zonepb.ZoneConfig
+shouldSplitOnSystemTenantObject	system.go	/^func (s *SystemConfig) shouldSplitOnSystemTenantObject(id SystemTenantObjectID) bool {$/;"	f	struct:config.SystemConfig	typeref:typename:bool
+staticSplits	system.go	/^var staticSplits = []roachpb.RKey{$/;"	v	package:config
+systemTenantTableBoundarySplitKey	system.go	/^func (s *SystemConfig) systemTenantTableBoundarySplitKey($/;"	f	struct:config.SystemConfig	typeref:typename:roachpb.RKey
+tenantBoundarySplitKey	system.go	/^func (s *SystemConfig) tenantBoundarySplitKey($/;"	f	struct:config.SystemConfig	typeref:typename:roachpb.RKey
+testingLargestIDHook	system.go	/^	testingLargestIDHook func(SystemTenantObjectID) SystemTenantObjectID$/;"	v	package:config	typeref:typename:func(SystemTenantObjectID) SystemTenantObjectID
+zone	system.go	/^	zone        *zonepb.ZoneConfig$/;"	m	struct:config.zoneEntry	typeref:typename:*zonepb.ZoneConfig
+zoneConfigHook	system.go	/^type zoneConfigHook func($/;"	t	package:config	typeref:typename:func(sysCfg *SystemConfig, objectID SystemTenantObjectID,) (zone *zonepb.ZoneConfig, placeholder *zonepb.ZoneConfig, cache bool, err error)
+zoneEntry	system.go	/^type zoneEntry struct {$/;"	s	package:config
