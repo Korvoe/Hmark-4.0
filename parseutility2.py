@@ -140,11 +140,13 @@ def removeComment(string, language):
     # Code for removing comments
     c_regex = re.compile(r'(?P<comment>//.*?$|[{}]+)|(?P<multilinecomment>/\*.*?\*/)|(?P<noncomment>\'(\\.|[^\\\'])*\'|"(\\.|[^\\"])*"|.[^/\'"]*)',
         re.DOTALL | re.MULTILINE)
-    python_regex = re.compile(r"(?m)^ *#.*\n?|(\"\"\"([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\"\"\")")
+    pythonShortComRegex = re.compile(r'(?!.*\"|.*\')[\r\t\f\v]*(#).*(?!.*\"|.*\')')
+    pythonLongComRegex = re.compile(r"(\"\"\")(.|\n)*(\"\"\")")
     if language == "c" or language == "java" or language == "go" or language == "javascript" or language == "js":
         return ''.join([c.group('noncomment') for c in c_regex.finditer(string) if c.group('noncomment')])
     elif language == "python":
-        return python_regex.sub("", string)
+        string = pythonShortComRegex.sub("", string)
+        return pythonLongComRegex.sub("", string)
 
 # def getBody(originalFunction):
 #   # returns the function's body as a string.
@@ -182,7 +184,6 @@ def new_abstract(instance, level, language):
     if int(level) >= 2:  # DTYPE
         dataTypeList = instance.dataTypeList
         for dtype in dataTypeList:
-            print(dtype)
             if len(dtype) == 0:
                 continue
             try:
@@ -235,8 +236,9 @@ def parse_java_shallow(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-
+        print(elemList)
         if i != '' and method.match(elemList[3]) and len(elemList) >= 6:
+            print("*************************SAS***************************")
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),
@@ -348,7 +350,7 @@ def parse_python_shallow(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        if i != '' and (member.match(elemList[3]) or func.match(elemList[3])):
+        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])):
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),

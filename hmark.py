@@ -349,8 +349,7 @@ class App:
                     Json = {}
                     if funcLen > 50:
                         hashValue = md5(absBody.encode('utf-8')).hexdigest()
-                        Json["file"] = str(f.parentFile)
-                        Json["function name"] = str(f.name)
+                        Json["file"] = str(f.parentFile.split(str(proj)+"/")[1])
                         Json["function id"] = f.funcId
                         Json["function length"] = funcLen
                         Json["hash value"] = hashValue
