@@ -581,7 +581,6 @@ def parse_js_shallow(file):
     method = re.compile(r'(method)')
     number = re.compile(r'(\d+)')
     new_line = re.compile(r'(\n)')
-    funcB = pcre.compile(r'function[^{]+({(?:[^{}]+|(?-1))*+})')
 
     string = " "
     funcId = 1
@@ -598,10 +597,21 @@ def parse_js_shallow(file):
             functionInstance.parentNumLoc = len(lines)
             string = " "
             string = string.join(lines[int(number.search(elemList[4]).group(0))-1:])
-            if funcB.search(string):
-                functionInstance.funcBody = functionInstance.funcBody + funcB.search(string).group(1)[1:-1]
-            else:
-                functionInstance.funcBody = " "
+            funcString = ""
+            ctr = 0
+            flag = 0
+            for c in string:
+                if c == "{":
+                    ctr = ctr + 1
+                    flag = 1
+                elif c == "}":
+                    ctr = ctr - 1
+                if ctr == 0 and flag == 1:
+                    break
+                elif ctr != 0 and flag == 1 and c != "{" and c != "}":
+                    funcString = funcString + c
+
+            functionInstance.funcBody = functionInstance.funcBody + funcString
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                       int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
             functionInstance.funcId = funcId
@@ -634,7 +644,6 @@ def parse_js_deep(file):
     method = re.compile(r'(method)')
     number = re.compile(r'(\d+)')
     new_line = re.compile(r'(\n)')
-    funcB = pcre.compile(r'function[^{]+({(?:[^{}]+|(?-1))*+})')
 
     string = " "
     funcId = 1
@@ -644,20 +653,30 @@ def parse_js_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
+        if i != '' and len(elemList) >= 5 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
             #Parameters
             if parameter.search(elemList[5]):
                 functionInstance.parameterList.append(parameter.search(elemList[5]).group(1))
-
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
             string = " "
             string = string.join(lines[int(number.search(elemList[4]).group(0))-1:])
-            if funcB.search(string):
-                functionInstance.funcBody = functionInstance.funcBody + funcB.search(string).group(1)[1:-1]
-            else:
-                functionInstance.funcBody = " "
+            funcString = ""
+            ctr = 0
+            flag = 0
+            for c in string:
+                if c == "{":
+                    ctr = ctr + 1
+                    flag = 1
+                elif c == "}":
+                    ctr = ctr - 1
+                if ctr == 0 and flag == 1:
+                    break
+                elif ctr != 0 and flag == 1 and c != "{" and c != "}":
+                    funcString = funcString + c
+
+            functionInstance.funcBody = functionInstance.funcBody + funcString
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                       int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
             functionInstance.funcId = funcId
@@ -674,10 +693,9 @@ def parse_js_deep(file):
             for var in varList:
                 elemsList = re.sub(r'[\t\s ]{2,}', '', var)
                 elemsList = elemsList.split("\t")
-                if var != '' and len(elemsList) >= 4 and (varRe.fullmatch(elemsList[3]) or variableRe.fullmatch(elemsList[3])):
+                if var != '' and (varRe.fullmatch(elemsList[3]) or variableRe.fullmatch(elemsList[3])):
                     functionInstance.variableList.append(elemsList[0])
             functionInstanceList.append(functionInstance)
-
     return functionInstanceList
 
 
