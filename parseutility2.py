@@ -465,7 +465,13 @@ def parse_go_shallow(file):
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                     int(number.search(elemList[5]).group(0)))
             string = " "
-            string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+            if func.search(lines[functionInstance.lines[0]]):
+                string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-1]):
+                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-2]):
+                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
@@ -505,19 +511,28 @@ def parse_go_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4])) and len(elemList) >= 8:
+        if i != '' and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4])) and len(elemList) >= 6:
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                       int(number.search(elemList[7]).group(0)))
             string = " "
-            string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+
+            if func.search(lines[functionInstance.lines[0]]):
+                string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-1]):
+                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-2]):
+                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+            print("STRING")
+            print(string)
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
                 functionInstance.funcBody = " "
-            functionInstance.funcId = funcId
+            print("FUNCTION BODY")
+            functionInstance.funcId = func
             funcId += 1
             #Data types
             elemList[5] = re.sub("(typeref:typename:)", "", elemList[5])
@@ -556,6 +571,11 @@ def parse_go_deep(file):
                 elemsList = elemsList.split("\t")
                 if var != '' and (varRe.match(elemsList[3]) or varRe.match(elemsList[4])):
                     functionInstance.variableList.append(elemsList[0])
+                    print("//// " +str(elemsList))
+            print(functionInstance.funcBody)
+            print("Parameters: " + str(functionInstance.parameterList))
+            print("Variables: " + str(functionInstance.variableList))
+            print("Data types: " + str(functionInstance.dataTypeList))
             functionInstanceList.append(functionInstance)
 
     return functionInstanceList

@@ -441,11 +441,20 @@ def parse_go_shallow(file):
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                     int(number.search(elemList[5]).group(0)))
             string = " "
-            string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+            if len(lines)-1 >= functionInstance.lines[0]:
+                if func.search(lines[functionInstance.lines[0]]):
+                    string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+            if func.search(lines[functionInstance.lines[0]-1]):
+                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-2]):
+                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+            print(string)
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
                 functionInstance.funcBody = " "
+            print("FUNCTION BODY")
+            print(functionInstance.funcBody)
             functionInstance.funcId = funcId
             funcId += 1
             functionInstanceList.append(functionInstance)
@@ -482,18 +491,26 @@ def parse_go_deep(file):
         functionInstance = function(file)
         functionInstance.funcBody = ''
         if i != '' and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4])) and len(elemList) >= 6:
-            print("Function: " + str(elemList))
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                       int(number.search(elemList[7]).group(0)))
             string = " "
-            string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+
+            if func.search(lines[functionInstance.lines[0]]):
+                string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-1]):
+                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-2]):
+                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+            print("STRING")
+            print(string)
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
                 functionInstance.funcBody = " "
+            print("FUNCTION BODY")
             functionInstance.funcId = func
             funcId += 1
             #Data types
@@ -759,12 +776,13 @@ def parseFile_js_deep(f):
 
 #start = time.time()
 #parse_c_deep("testcode/trace.c")
-for i in parse_js_deep("testcode1/nginx-conf-master/src/conf.js"):
-    orig, abst = new_abstract(i, 4, 'javascript')
-    print("ORIGINAL")
-    print(orig)
-    print("ABSTRACT")
-    print(abst)
+for i in parse_go_shallow("testcode1/system.go"):
+    print(1)
+#    orig, abst = new_abstract(i, 4, 'go')
+#    print("ORIGINAL")
+#    print(orig)
+#    print("ABSTRACT")
+#    print(abst)
 #end = time.time()
 #print(end - start)
 #start = time.time()
