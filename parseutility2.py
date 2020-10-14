@@ -96,6 +96,10 @@ def loadSource(rootDirectory):
             or ext.endswith('.cxx') or ext.endswith('.java')
             or ext.endswith('.py')) or ext.endswith('.go') or ext.endswith('.js'):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
+                print("WWWWWWWWWWWWWWWWWW")
+                print(path)
+                print(rootDirectory)
+                print(absPathWithFileName)
                 if maxFileSizeInBytes is not None:
                     if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
                         file = absPathWithFileName
@@ -465,12 +469,15 @@ def parse_go_shallow(file):
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                     int(number.search(elemList[5]).group(0)))
             string = " "
-            if func.search(lines[functionInstance.lines[0]]):
-                string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
-            elif func.search(lines[functionInstance.lines[0]-1]):
-                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
-            elif func.search(lines[functionInstance.lines[0]-2]):
-                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+
+            if len(lines)-1 >= functionInstance.lines[0]:
+                if func.search(lines[functionInstance.lines[0]]):
+                    string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+                if func.search(lines[functionInstance.lines[0]-1]):
+                    string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+                elif func.search(lines[functionInstance.lines[0]-2]):
+                    string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+
 
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
@@ -519,12 +526,14 @@ def parse_go_deep(file):
                                       int(number.search(elemList[7]).group(0)))
             string = " "
 
-            if func.search(lines[functionInstance.lines[0]]):
-                string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
-            elif func.search(lines[functionInstance.lines[0]-1]):
+            if len(lines)-1 >= functionInstance.lines[0]:
+                if func.search(lines[functionInstance.lines[0]]):
+                    string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+            if func.search(lines[functionInstance.lines[0]-1]):
                 string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
             elif func.search(lines[functionInstance.lines[0]-2]):
                 string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+
             print("STRING")
             print(string)
             if funcBody.search(string):
@@ -713,7 +722,7 @@ def parse_js_deep(file):
             for var in varList:
                 elemsList = re.sub(r'[\t\s ]{2,}', '', var)
                 elemsList = elemsList.split("\t")
-                if var != '' and (varRe.fullmatch(elemsList[3]) or variableRe.fullmatch(elemsList[3])):
+                if var != '' and len(elemsList) >= 4 and ((varRe.fullmatch(elemsList[3]) or variableRe.fullmatch(elemsList[3]))):
                     functionInstance.variableList.append(elemsList[0])
             functionInstanceList.append(functionInstance)
     return functionInstanceList

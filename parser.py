@@ -52,7 +52,7 @@ def removeComment(string, language):
     c_regex = re.compile(r'(?P<comment>//.*?$|[{}]+)|(?P<multilinecomment>/\*.*?\*/)|(?P<noncomment>\'(\\.|[^\\\'])*\'|"(\\.|[^\\"])*"|.[^/\'"]*)',
         re.DOTALL | re.MULTILINE)
     python_regex = re.compile(r"(?m)^ *#.*\n?|(\"\"\"([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\"\"\")")
-    if language == "c" or language == "java" or language == "go" or language == "javascript":
+    if language == "c" or language == "java" or language == "go" or language == "javascript" or language == "js":
         return ''.join([c.group('noncomment') for c in c_regex.finditer(string) if c.group('noncomment')])
     elif language == "python":
         return python_regex.sub("", string)
@@ -62,7 +62,10 @@ def new_abstract(instance, level, language):
     # and then returns a tuple consisting of the original body and abstracted
     # body.
     originalFunctionBody = instance.funcBody
+    print(originalFunctionBody)
     originalFunctionBody = removeComment(originalFunctionBody, language)
+    print("REMOVED COMMENTS")
+    print(originalFunctionBody)
     abstractBody = originalFunctionBody
 
     if int(level) >= 0:  # No abstraction.
@@ -611,8 +614,6 @@ def parse_js_shallow(file):
                     funcString = funcString + c
 
             functionInstance.funcBody = functionInstance.funcBody + funcString
-            functionInstance.funcBody = functionInstance.funcBody + funcB.search(string).group(1)[1:-1]
-
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                       int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
             functionInstance.funcId = funcId
@@ -676,7 +677,6 @@ def parse_js_deep(file):
                     break
                 elif ctr != 0 and flag == 1 and c != "{" and c != "}":
                     funcString = funcString + c
-
             functionInstance.funcBody = functionInstance.funcBody + funcString
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
                                       int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
@@ -776,13 +776,15 @@ def parseFile_js_deep(f):
 
 #start = time.time()
 #parse_c_deep("testcode/trace.c")
-for i in parse_go_shallow("testcode1/system.go"):
-    print(1)
-#    orig, abst = new_abstract(i, 4, 'go')
-#    print("ORIGINAL")
-#    print(orig)
-#    print("ABSTRACT")
-#    print(abst)
+for i in parse_js_deep("testcode1/nginx-conf-master/src/conf.js"):
+    print("FUNC BODY")
+    print(i.funcBody)
+    print("ORIGINALIS")
+    orig, abst = new_abstract(i, 4, 'js')
+    print("ORIGINAL")
+    print(orig)
+    print("ABSTRACT")
+    print(abst)
 #end = time.time()
 #print(end - start)
 #start = time.time()

@@ -302,7 +302,8 @@ class App:
         self.listProcess.update()
 
         tupleList = pu.loadSource(directory)
-
+        print("#########333 ")
+        print(tupleList)
         numFile = len(tupleList)
         if numFile == 0:
             self.listProcess.insert(Tkinter.END,
