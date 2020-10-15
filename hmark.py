@@ -389,7 +389,7 @@ class App:
 
             self.listProcess.insert(Tkinter.END, "")
             self.listProcess.insert(Tkinter.END,
-                                    "Hash index saved to: " + os.getcwd().replace("\\", "/") + "/hidx/hashmark_" + str(absLevel) + "_" + "_" + proj + ".hidx")
+                                    "Hash index saved to: " + os.getcwd().replace("\\", "/") + "/hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx")
             self.listProcess.see("end")
             self.btnOpenFolder.config(state="normal")
 
@@ -511,7 +511,7 @@ def run_gui():
         print("GUI process terminated.")
 
 
-def generate_cli(targetPath, language, isAbstraction):
+def generate_cli(targetPath, isAbstraction):
     import subprocess
     directory = targetPath.rstrip('/').rstrip("\\")
 
@@ -533,32 +533,33 @@ def generate_cli(targetPath, language, isAbstraction):
     hashFileMap = {}
 
     print("[+] Loading source files... This may take a few minutes.")
+    tupleList = pu.loadSource(directory)
 
-    fileList, language = pu.loadSource(directory)
-    numFile = len(fileList)
-
+    numFile = len(tupleList)
     if numFile == 0:
         print("[-] Error: Failed loading source files.")
         print("    Check if you selected proper directory, or if your project contains .c, .cpp or java files.")
         sys.exit()
     else:
         print("[+] Load complete. Generating hashmark...")
-        if language == "C":
-            if absLevel == 0:
-                func = parseFile_shallow_multi
-            else:
-                func = parseFile_deep_multi
+
+        if absLevel == 0:
+            func = parseFiles_shallow
         else:
-            func = parseFile_java
+            func = parseFiles_deep
 
         cpu_count = get_cpu_count.get_cpu_count()
         if cpu_count != 1:
             cpu_count -= 1
 
         pool = multiprocessing.Pool(processes=cpu_count)
-        for idx, tup in enumerate(pool.imap_unordered(func, fileList)):
+        listOfHashJsons = []
+        for idx, tup in enumerate(pool.starmap(func, tupleList)):
             f = tup[0]
             functionInstanceList = tup[1]
+            language = tup[2]
+
+            pathOnly = f.split(proj, 1)[1][1:]
 
             fullName = proj + f.split(proj, 1)[1]
             pathOnly = f.split(proj, 1)[1][1:]
@@ -582,25 +583,20 @@ def generate_cli(targetPath, language, isAbstraction):
 
             if len(functionInstanceList) > 0:
                 numLine += functionInstanceList[0].parentNumLoc
-
             for f in functionInstanceList:
                 f.removeListDup()
                 path = f.parentFile
-                absBody = pu.abstract(f, absLevel)[1]
+                origBody, absBody = pu.new_abstract(f, absLevel, language)
                 absBody = pu.normalize(absBody)
                 funcLen = len(absBody)
-
+                Json = {}
                 if funcLen > 50:
                     hashValue = md5(absBody.encode('utf-8')).hexdigest()
-
-                    try:
-                        projDic[funcLen].append(hashValue)
-                    except KeyError:
-                        projDic[funcLen] = [hashValue]
-                    try:
-                        hashFileMap[hashValue].extend([pathOnly, f.funcId])
-                    except KeyError:
-                        hashFileMap[hashValue] = [pathOnly, f.funcId]
+                    Json["file"] = str(f.parentFile.split(str(proj)+"/")[1])
+                    Json["function id"] = f.funcId
+                    Json["function length"] = funcLen
+                    Json["hash value"] = hashValue
+                    listOfHashJsons.append(Json)
                 else:
                     numFunc -= 1  # decrement numFunc by 1 if funclen is under threshold
 
@@ -608,23 +604,14 @@ def generate_cli(targetPath, language, isAbstraction):
         print("[+] Hash index successfully generated.")
         print("[+] Saving hash index to file...", end=' ')
 
+        try:
+            os.mkdir("hidx")
+        except:
+            pass
         packageInfo = str(localVersion) + ' ' + str(proj) + ' ' + str(numFile) + ' ' + str(numFunc) + ' ' + str(numLine) + '\n'
-        with open("hidx/hashmark_" + str(absLevel) + "_" + str(language) + "_" + proj + ".hidx", 'w') as fp:
+        with open("hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx", 'w') as fp:
             fp.write(packageInfo)
-
-            for key in sorted(projDic):
-                fp.write(str(key) + '\t')
-                for h in list(set(projDic[key])):
-                    fp.write(h + '\t')
-                fp.write('\n')
-
-            fp.write('\n=====\n')
-
-            for key in sorted(hashFileMap):
-                fp.write(str(key) + '\t')
-                for f in hashFileMap[key]:
-                    fp.write(str(f) + '\t')
-                fp.write('\n')
+            fp.write(str(listOfHashJsons))
 
         timeOut = time.time()
 
@@ -636,11 +623,11 @@ def generate_cli(targetPath, language, isAbstraction):
         print(" - " + str(numFunc) + ' functions;')
         print(" - " + str(numLine) + ' lines of code.')
         print("")
-        print("[+] Hash index saved to: " + os.getcwd().replace("\\", "/") + "/hidx/hashmark_" + str(absLevel) + "_" + str(language) + "_" + proj + ".hidx")
+        print("[+] Hash index saved to: " + os.getcwd().replace("\\", "/") + "/hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx")
 
 
-def run_cli(targetPath, language, isAbstraction):
-    generate_cli(targetPath, language, isAbstraction)
+def run_cli(targetPath, isAbstraction):
+    generate_cli(targetPath, isAbstraction)
     print("Farewell!")
 
 
@@ -665,8 +652,8 @@ def main():
     ap.add_argument("-c",
         "--cli-mode",
         dest="cli_mode",
-        nargs=3,
-        metavar=("path", "C/JAVA", "ON/OFF"),
+        nargs=2,
+        metavar=("path", "ON/OFF"),
         required=False,
         help="run hmark without GUI by specifying the path to the target directory, and the abstraction mode")
 
@@ -710,27 +697,15 @@ def main():
             print("    Please specify the right directory to your target.")
             sys.exit()
         if args.cli_mode[1].isalpha():
-            if args.cli_mode[1].lower() == 'c':
-                if args.cli_mode[2].isalpha():
-                    if args.cli_mode[2].lower() == "on" or args.cli_mode[2].lower() == "off":
-                        print("Running in CLI mode")
-                        print("TARGET: " + args.cli_mode[0])
-                        print("LANGUAGE: " + args.cli_mode[1])
-                        print("ABSTRACTION: " + args.cli_mode[2])
-                        run_cli(args.cli_mode[0], args.cli_mode[1], args.cli_mode[2])
-                    else:
-                        print("[-] Bad parameter: " + args.cli_mode[2])
-                        print("    Accepted values are ON or OFF.")
-                        sys.exit()
-            elif args.cli_mode[1].lower() == 'java':
+            if args.cli_mode[1].lower() == "on" or args.cli_mode[1].lower() == "off":
                 print("Running in CLI mode")
                 print("TARGET: " + args.cli_mode[0])
-                print("LANGUAGE: " + args.cli_mode[1])
-                run_cli(args.cli_mode[0], args.cli_mode[1], args.cli_mode[2])
-        else:
-            print("[-] Bad parameter: " + args.cli_mode[1])
-            print("    Accepted values are ON or OFF.")
-            sys.exit()
+                print("ABSTRACTION: " + args.cli_mode[1])
+                run_cli(args.cli_mode[0], args.cli_mode[1])
+            else:
+                print("[-] Bad parameter: " + args.cli_mode[1])
+                print("    Accepted values are ON or OFF.")
+                sys.exit()
 
     else:
         print("Running GUI")
