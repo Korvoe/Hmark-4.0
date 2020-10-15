@@ -302,14 +302,13 @@ class App:
         self.listProcess.update()
 
         tupleList = pu.loadSource(directory)
-        print("#########333 ")
-        print(tupleList)
+
         numFile = len(tupleList)
         if numFile == 0:
             self.listProcess.insert(Tkinter.END,
                                     "Error: Failed loading source files.")
             self.listProcess.insert(Tkinter.END,
-                                    "- Check if you selected proper directory, or if your project contains .c, .cpp, .py or .java files.")
+                                    "- Check if you selected proper directory, or if your project contains .c, .cpp, .py, .js, .go or .java files.")
         else:
             self.listProcess.insert(Tkinter.END,
                                     "Load complete. Generating hashmark...")

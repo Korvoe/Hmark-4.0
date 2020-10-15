@@ -1,1 +1,0 @@
-select '[1, "a", true, null, {"c": "blah", "d": []}]':::JSON, '{"\n": ["\""], "\"": "\\"}'::JSONB

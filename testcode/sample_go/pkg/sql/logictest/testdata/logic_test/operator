@@ -1,5 +1,0 @@
-query error cannot take square root of a negative number
-SELECT |/ -1.0::float
-
-query error cannot take square root of a negative number
-SELECT |/ -1.0::decimal

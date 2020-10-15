@@ -9,8 +9,6 @@ import os
 import sys
 import subprocess
 import re
-import pcre
-import regex
 import platform
 
 def get_platform():
@@ -96,10 +94,6 @@ def loadSource(rootDirectory):
             or ext.endswith('.cxx') or ext.endswith('.java')
             or ext.endswith('.py')) or ext.endswith('.go') or ext.endswith('.js'):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
-                print("WWWWWWWWWWWWWWWWWW")
-                print(path)
-                print(rootDirectory)
-                print(absPathWithFileName)
                 if maxFileSizeInBytes is not None:
                     if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
                         file = absPathWithFileName
@@ -207,7 +201,6 @@ def new_abstract(instance, level, language):
             except:
                 pass
 
-
     return (originalFunctionBody, abstractBody)
 
 delimiter = "\r\0?\r?\0\r"
@@ -225,7 +218,7 @@ def parse_java_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     methodList = astString.split('\n')
     method = re.compile(r'(method)')
@@ -240,9 +233,7 @@ def parse_java_shallow(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        print(elemList)
         if i != '' and method.match(elemList[3]) and len(elemList) >= 6:
-            print("*************************SAS***************************")
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),
@@ -272,7 +263,7 @@ def parse_java_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     methodList = astString.split('\n')
     local = re.compile(r'local')
@@ -341,7 +332,7 @@ def parse_python_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     methodList = astString.split('\n')
     member = re.compile(r'(member)')
@@ -362,6 +353,7 @@ def parse_python_shallow(file):
             methodInstance.parentNumLoc = len(lines)
             for line in range(methodInstance.lines[0], methodInstance.lines[1]):
                 methodInstance.funcBody = methodInstance.funcBody + (lines[line])
+
             methodInstanceList.append(methodInstance)
 
     return methodInstanceList
@@ -378,7 +370,7 @@ def parse_python_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     methodList = astString.split('\n')
     member = re.compile(r'(member)')
@@ -448,7 +440,7 @@ def parse_go_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     functionList = astString.split('\n')
     func = re.compile(r'(func)')
@@ -486,7 +478,7 @@ def parse_go_shallow(file):
             functionInstance.funcId = funcId
             funcId += 1
             functionInstanceList.append(functionInstance)
-
+            
     return functionInstanceList
 
 #Deep GO code parser using Universal-Ctags
@@ -503,7 +495,7 @@ def parse_go_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     functionList = astString.split('\n')
     varRe = re.compile(r'(var)')
@@ -518,7 +510,7 @@ def parse_go_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4])) and len(elemList) >= 6:
+        if i != '' and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4])) and len(elemList) >= 8:
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
@@ -533,14 +525,10 @@ def parse_go_deep(file):
                 string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
             elif func.search(lines[functionInstance.lines[0]-2]):
                 string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
-
-            print("STRING")
-            print(string)
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
                 functionInstance.funcBody = " "
-            print("FUNCTION BODY")
             functionInstance.funcId = func
             funcId += 1
             #Data types
@@ -568,7 +556,7 @@ def parse_go_deep(file):
                         functionInstance.dataTypeList.append(re.search("\S+", elem).group(0))
 
             #Variables
-            filee = open("function.go", "w+")
+            filee = open("function.go", "w+", encoding="utf8")
             filee.write(functionInstance.funcBody)
             filee.close()
             Command1 = "ctags -f - --kinds-go=* --fields=neKS function.go"
@@ -580,11 +568,6 @@ def parse_go_deep(file):
                 elemsList = elemsList.split("\t")
                 if var != '' and (varRe.match(elemsList[3]) or varRe.match(elemsList[4])):
                     functionInstance.variableList.append(elemsList[0])
-                    print("//// " +str(elemsList))
-            print(functionInstance.funcBody)
-            print("Parameters: " + str(functionInstance.parameterList))
-            print("Variables: " + str(functionInstance.variableList))
-            print("Data types: " + str(functionInstance.dataTypeList))
             functionInstanceList.append(functionInstance)
 
     return functionInstanceList
@@ -603,7 +586,7 @@ def parse_js_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     functionList = astString.split('\n')
     func = re.compile(r'(function)')
@@ -663,7 +646,7 @@ def parse_js_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r')
+    f = open(file, 'r', encoding="utf8")
     lines = f.readlines()
     functionList = astString.split('\n')
     func = re.compile(r'(function)')
@@ -682,7 +665,7 @@ def parse_js_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 5 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
+        if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
             #Parameters
             if parameter.search(elemList[5]):
                 functionInstance.parameterList.append(parameter.search(elemList[5]).group(1))
@@ -712,7 +695,7 @@ def parse_js_deep(file):
             funcId += 1
 
             #Variables
-            filee = open("function.js", "w+")
+            filee = open("function.js", "w+", encoding="utf8")
             filee.write(functionInstance.funcBody)
             filee.close()
             Command1 = "ctags -f - --kinds-javascript=* --fields=neKS function.js"
