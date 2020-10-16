@@ -207,7 +207,7 @@ delimiter = "\r\0?\r?\0\r"
 
 #Shallow JAVA code parser using Universal-Ctags
 def parse_java_shallow(file):
-    Command = "ctags -f - --kinds-java=* --fields=neK " + file
+    Command = "ctags -f - --kinds-java=* --fields=neKS " + file
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -233,11 +233,11 @@ def parse_java_shallow(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        if i != '' and method.match(elemList[3]) and len(elemList) >= 6:
+        if i != '' and method.match(elemList[3]) and len(elemList) >= 7:
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[5]).group(0)))
+                                    int(number.search(elemList[6]).group(0)))
             methodInstance.parentNumLoc = len(lines)
             string = ""
             string = string.join(lines[methodInstance.lines[0]-1:methodInstance.lines[1]])
@@ -320,7 +320,6 @@ def parse_java_deep(file):
 
 #Shallow PYTHON code parser using Universal-Ctags
 def parse_python_shallow(file):
-
     Command = "ctags -f - --kinds-python=* --fields=neK " + file
     global delimiter
     delimiter = "\r\0?\r?\0\r"
@@ -339,6 +338,7 @@ def parse_python_shallow(file):
     func = re.compile(r'(function)')
     number = re.compile(r'(\d+)')
     methodInstanceList = []
+    funcId = 1
 
     for i in methodList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
@@ -348,12 +348,13 @@ def parse_python_shallow(file):
         if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])):
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
+            methodInstance.funcId = funcId
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),
                                     int(number.search(elemList[5]).group(0)))
             methodInstance.parentNumLoc = len(lines)
             for line in range(methodInstance.lines[0], methodInstance.lines[1]):
                 methodInstance.funcBody = methodInstance.funcBody + (lines[line])
-
+            funcId += 1
             methodInstanceList.append(methodInstance)
 
     return methodInstanceList
@@ -382,7 +383,6 @@ def parse_python_deep(file):
     variables = []
     parameters = []
     funcId = 1
-
     #Variables list
     for i in methodList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
@@ -403,7 +403,7 @@ def parse_python_deep(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        if i != '' and (member.match(elemList[3]) or func.match(elemList[3])) and len(elemList) >= 6:
+        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])):
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),
@@ -421,14 +421,13 @@ def parse_python_deep(file):
             for param in parameters:
                 if methodInstance.lines[0] <= int(number.search(param[4]).group(0)) <= methodInstance.lines[1]:
                     methodInstance.parameterList.append(param[0])
-
             methodInstanceList.append(methodInstance)
 
     return methodInstanceList
 
 #Shallow GO code parser using Universal-Ctags
 def parse_go_shallow(file):
-    Command = "ctags -f - --kinds-go=* --fields=neK " + file
+    Command = "ctags -f - --kinds-go=* --fields=neKSt " + file
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -454,21 +453,21 @@ def parse_go_shallow(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and func.fullmatch(elemList[3]) and len(elemList) >= 6:
+        if i != '' and func.fullmatch(elemList[3]) and len(elemList) >= 8:
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[5]).group(0)))
+                                    int(number.search(elemList[7]).group(0)))
             string = " "
 
             if len(lines)-1 >= functionInstance.lines[0]:
                 if func.search(lines[functionInstance.lines[0]]):
                     string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
-                if func.search(lines[functionInstance.lines[0]-1]):
-                    string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
-                elif func.search(lines[functionInstance.lines[0]-2]):
-                    string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+            if func.search(lines[functionInstance.lines[0]-1]):
+                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+            elif func.search(lines[functionInstance.lines[0]-2]):
+                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
 
 
             if funcBody.search(string):
@@ -478,7 +477,7 @@ def parse_go_shallow(file):
             functionInstance.funcId = funcId
             funcId += 1
             functionInstanceList.append(functionInstance)
-            
+
     return functionInstanceList
 
 #Deep GO code parser using Universal-Ctags
@@ -525,6 +524,7 @@ def parse_go_deep(file):
                 string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
             elif func.search(lines[functionInstance.lines[0]-2]):
                 string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
@@ -568,13 +568,14 @@ def parse_go_deep(file):
                 elemsList = elemsList.split("\t")
                 if var != '' and (varRe.match(elemsList[3]) or varRe.match(elemsList[4])):
                     functionInstance.variableList.append(elemsList[0])
+
             functionInstanceList.append(functionInstance)
 
     return functionInstanceList
 
 #Shallow JavaScript code parser using Universal-Ctags
 def parse_js_shallow(file):
-    Command = "ctags -f - --kinds-javascript=* --fields=neK " + file
+    Command = "ctags -f - --kinds-javascript=* --fields=neKS " + file
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -603,7 +604,7 @@ def parse_js_shallow(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 5 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
+        if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
@@ -666,9 +667,6 @@ def parse_js_deep(file):
         functionInstance = function(file)
         functionInstance.funcBody = ''
         if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
-            #Parameters
-            if parameter.search(elemList[5]):
-                functionInstance.parameterList.append(parameter.search(elemList[5]).group(1))
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
@@ -693,6 +691,10 @@ def parse_js_deep(file):
                                       int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
             functionInstance.funcId = funcId
             funcId += 1
+
+            #Parameters
+            if parameter.search(elemList[5]):
+                functionInstance.parameterList.append(parameter.search(elemList[5]).group(1))
 
             #Variables
             filee = open("function.js", "w+", encoding="utf8")

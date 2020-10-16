@@ -345,7 +345,8 @@ class App:
                     path = f.parentFile
                     origBody, absBody = pu.new_abstract(f, absLevel, language)
                     absBody = pu.normalize(absBody)
-                    funcLen = len(absBody)
+                    funcLen = len(origBody)
+
                     Json = {}
                     if funcLen > 50:
                         hashValue = md5(absBody.encode('utf-8')).hexdigest()
@@ -588,7 +589,7 @@ def generate_cli(targetPath, isAbstraction):
                 path = f.parentFile
                 origBody, absBody = pu.new_abstract(f, absLevel, language)
                 absBody = pu.normalize(absBody)
-                funcLen = len(absBody)
+                funcLen = len(origBody)
                 Json = {}
                 if funcLen > 50:
                     hashValue = md5(absBody.encode('utf-8')).hexdigest()
