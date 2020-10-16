@@ -1,3 +1,0 @@
-
-     return !!semver.prerelease(version)
-   
