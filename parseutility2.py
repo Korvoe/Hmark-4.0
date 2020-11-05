@@ -30,28 +30,6 @@ def get_platform():
         osName = "osx"
         bits = ""
 
-
-def setEnvironment(caller):
-    get_platform()
-    global javaCallCommand
-    javaCallCommand = list()
-    if caller == "GUI":
-        cwd = os.getcwd()
-        if osName == "win":
-            javaCallCommand = os.path.join(cwd, "FuncParser-opt.exe")
-
-        elif osName == "linux" or osName == "osx":
-            javaCallCommand = 'java -Xmx1024m -jar ' + os.path.join(cwd, "FuncParser-opt.jar")
-
-    else:
-        if osName == "win":
-            base_path = os.path.dirname(os.path.abspath(__file__))  # vuddy/hmark root directory
-            javaCallCommand = os.path.join(base_path, "FuncParser-opt.exe")
-        elif osName == "linux" or osName == "osx":
-            base_path = os.path.dirname(os.path.abspath(__file__))  # vuddy/hmark root directory
-            javaCallCommand = 'java -Xmx1024m -jar ' + os.path.join(base_path, "FuncParser-opt.jar")
-
-
 class function:
     parentFile = None  # Absolute file which has the function
     parentNumLoc = None  # Number of LoC of the parent file
@@ -146,6 +124,16 @@ def removeComment(string, language):
         string = pythonShortComRegex.sub("", string)
         return pythonLongComRegex.sub("", string)
 
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+
 # def getBody(originalFunction):
 #   # returns the function's body as a string.
 #   return
@@ -164,50 +152,86 @@ def new_abstract(instance, level, language):
     originalFunctionBody = instance.funcBody
     originalFunctionBody = removeComment(originalFunctionBody, language)
     abstractBody = originalFunctionBody
+    if language != "c":
+        if int(level) >= 0:  # No abstraction.
+            abstractBody = originalFunctionBody
 
-    if int(level) >= 0:  # No abstraction.
-        abstractBody = originalFunctionBody
+        if int(level) >= 1:  # PARAM
+            parameterList = instance.parameterList
+            for param in parameterList:
+                if len(param) == 0:
+                    continue
+                try:
+                    paramPattern = re.compile("(?!.*\")(^|\(|\s)" + str(param)+ "(\W)(?!.*\")")
+                    abstractBody = paramPattern.sub(r"\g<1>FPARAM\g<2>", abstractBody)
+                except:
+                    pass
 
-    if int(level) >= 1:  # PARAM
-        parameterList = instance.parameterList
-        for param in parameterList:
-            if len(param) == 0:
-                continue
-            try:
-                paramPattern = re.compile("(?!.*\")(^|\(|\s)" + str(param)+ "(\W)(?!.*\")")
-                abstractBody = paramPattern.sub(r"\g<1>FPARAM\g<2>", abstractBody)
-            except:
-                pass
+        if int(level) >= 2:  # DTYPE
+            dataTypeList = instance.dataTypeList
+            for dtype in dataTypeList:
+                if len(dtype) == 0:
+                    continue
+                try:
+                    dtypePattern = re.compile("(?!.*\")(^|\(|\s)" + str(dtype)+ "(\W)(?!.*\")")
+                    abstractBody = dtypePattern.sub(r"\g<1>DTYPE\g<2>", abstractBody)
+                except:
+                    pass
 
-    if int(level) >= 2:  # DTYPE
-        dataTypeList = instance.dataTypeList
-        for dtype in dataTypeList:
-            if len(dtype) == 0:
-                continue
-            try:
-                dtypePattern = re.compile("(?!.*\")(^|\(|\s)" + str(dtype)+ "(\W)(?!.*\")")
-                abstractBody = dtypePattern.sub(r"\g<1>DTYPE\g<2>", abstractBody)
-            except:
-                pass
+        if int(level) >= 3:  # LVAR
+            variableList = instance.variableList
+            for lvar in variableList:
+                if len(lvar) == 0:
+                    continue
+                try:
+                    lvarPattern = re.compile("(?!.*\")(^|\(|\s)" + str(lvar)+ "(\W)(?!.*\")")
+                    abstractBody = lvarPattern.sub(r"\g<1>LVAR\g<2>", abstractBody)
+                except:
+                    pass
+    else:
+        if int(level) >= 0:  # No abstraction.
+            abstractBody = originalFunctionBody
 
-    if int(level) >= 3:  # LVAR
-        variableList = instance.variableList
-        for lvar in variableList:
-            if len(lvar) == 0:
-                continue
-            try:
-                lvarPattern = re.compile("(?!.*\")(^|\(|\s)" + str(lvar)+ "(\W)(?!.*\")")
-                abstractBody = lvarPattern.sub(r"\g<1>LVAR\g<2>", abstractBody)
-            except:
-                pass
+        if int(level) >= 1:  # PARAM
+            parameterList = instance.parameterList
+            for param in parameterList:
+                if len(param) == 0:
+                    continue
+                try:
+                    paramPattern = re.compile("(^|\W)" + param + "(\W)")
+                    abstractBody = paramPattern.sub("\g<1>FPARAM\g<2>", abstractBody)
+                except:
+                    pass
 
+        if int(level) >= 2:  # DTYPE
+            dataTypeList = instance.dataTypeList
+            for dtype in dataTypeList:
+                if len(dtype) == 0:
+                    continue
+                try:
+                    dtypePattern = re.compile("(^|\W)" + dtype + "(\W)")
+                    abstractBody = dtypePattern.sub("\g<1>DTYPE\g<2>", abstractBody)
+                except:
+                    pass
+
+        if int(level) >= 3:  # LVAR
+            variableList = instance.variableList
+            for lvar in variableList:
+                if len(lvar) == 0:
+                    continue
+                try:
+                    lvarPattern = re.compile("(^|\W)" + lvar + "(\W)")
+                    abstractBody = lvarPattern.sub("\g<1>LVAR\g<2>", abstractBody)
+                except:
+                    pass
     return (originalFunctionBody, abstractBody)
 
 delimiter = "\r\0?\r?\0\r"
 
 #Shallow JAVA code parser using Universal-Ctags
 def parse_java_shallow(file):
-    Command = "ctags -f - --kinds-java=* --fields=neKS " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-java=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -218,7 +242,7 @@ def parse_java_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     methodList = astString.split('\n')
     method = re.compile(r'(method)')
@@ -233,7 +257,7 @@ def parse_java_shallow(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        if i != '' and method.match(elemList[3]) and len(elemList) >= 7:
+        if i != '' and len(elemList) >= 7 and method.match(elemList[3]):
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),
@@ -252,7 +276,8 @@ def parse_java_shallow(file):
 
 #Deep JAVA code parser using Universal-Ctags
 def parse_java_deep(file):
-    Command = "ctags -f - --kinds-java=* --fields=neKS " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-java=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -263,7 +288,7 @@ def parse_java_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     methodList = astString.split('\n')
     local = re.compile(r'local')
@@ -280,14 +305,14 @@ def parse_java_deep(file):
     for i in methodList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
         elemList = elemList.split("\t")
-        if i != '' and local.match(elemList[3]) and len(elemList) >= 6:
+        if i != '' and len(elemList) >= 6 and local.match(elemList[3]):
             variables.append(elemList)
     for i in methodList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        if i != '' and method.match(elemList[3]) and len(elemList) >= 7:
+        if i != ''  and len(elemList) >= 7 and method.match(elemList[3]):
             #Parameters and data types
             if (parameterSpace.search(elemList[5])):
                 for i in parameterSpace.search(elemList[5])[1].split(", "):
@@ -320,7 +345,8 @@ def parse_java_deep(file):
 
 #Shallow PYTHON code parser using Universal-Ctags
 def parse_python_shallow(file):
-    Command = "ctags -f - --kinds-python=* --fields=neK " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-python=* --fields=neK "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -331,7 +357,7 @@ def parse_python_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     methodList = astString.split('\n')
     member = re.compile(r'(member)')
@@ -361,7 +387,8 @@ def parse_python_shallow(file):
 
 #Deep PYTHON code parser using Universal-Ctags
 def parse_python_deep(file):
-    Command = "ctags -f - --kinds-python=* --fields=neK " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-python=* --fields=neK "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     try:
@@ -371,7 +398,7 @@ def parse_python_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     methodList = astString.split('\n')
     member = re.compile(r'(member)')
@@ -427,7 +454,8 @@ def parse_python_deep(file):
 
 #Shallow GO code parser using Universal-Ctags
 def parse_go_shallow(file):
-    Command = "ctags -f - --kinds-go=* --fields=neKSt " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-go=* --fields=neKSt "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -439,13 +467,14 @@ def parse_go_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     functionList = astString.split('\n')
     func = re.compile(r'(func)')
     number = re.compile(r'(\d+)')
     funcBody = re.compile(r'{([\S\s]*)}')
     string = " "
+    firstLine = 0
     funcId = 1
 
     for i in functionList:
@@ -453,12 +482,18 @@ def parse_go_shallow(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and func.fullmatch(elemList[3]) and len(elemList) >= 8:
+        if i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3])  and re.match(r"(end:)(\d+)", elemList[7]):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
-            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[7]).group(0)))
+            if number.search(elemList[4]):
+                firstLine = int(number.search(elemList[4]).group(0))
+            elif number.search(elemList[5]):
+                firstLine = int(number.search(elemList[5]).group(0))
+            else:
+                continue
+            functionInstance.lines = (firstLine,
+                                      int(number.search(elemList[7]).group(0)))
             string = " "
 
             if len(lines)-1 >= functionInstance.lines[0]:
@@ -482,7 +517,8 @@ def parse_go_shallow(file):
 
 #Deep GO code parser using Universal-Ctags
 def parse_go_deep(file):
-    Command = "ctags -f - --kinds-go=* --fields=neKSt " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-go=* --fields=neKSt "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -494,7 +530,7 @@ def parse_go_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     functionList = astString.split('\n')
     varRe = re.compile(r'(var)')
@@ -503,17 +539,25 @@ def parse_go_deep(file):
     number = re.compile(r'(\d+)')
     funcBody = re.compile(r'{([\S\s]*)}')
     string = " "
+    firstLine = 0
     funcId = 1
     for i in functionList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4])) and len(elemList) >= 8:
+        if i != ''  and len(elemList) >= 8 and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4]))  and re.match(r"(end:)(\d+)", elemList[7]):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
-            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
+            if number.search(elemList[4]):
+                firstLine = int(number.search(elemList[4]).group(0))
+            elif number.search(elemList[5]):
+                firstLine = int(number.search(elemList[5]).group(0))
+            else:
+                continue
+
+            functionInstance.lines = (firstLine,
                                       int(number.search(elemList[7]).group(0)))
             string = " "
 
@@ -529,12 +573,12 @@ def parse_go_deep(file):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
                 functionInstance.funcBody = " "
-            functionInstance.funcId = func
+            functionInstance.funcId = funcId
             funcId += 1
             #Data types
             elemList[5] = re.sub("(typeref:typename:)", "", elemList[5])
             if re.search(r'\(\s*([^)]+?)\s*\)', elemList[5]):
-                for dType in re.search(r'\(\s*([^)]+?)\s*\)', elemList[5])[1].split(", "):
+                for dType in re.search(r'\(\s*([^)]+?)\s*\)', elemList[5]).group(1).split(", "):
                     functionInstance.dataTypeList.append(re.search("\S+$", dType).group(0))
                     dType = re.sub("\S+$", "", dType)
                     if dType:
@@ -547,7 +591,7 @@ def parse_go_deep(file):
             #Parameters
             elemList[6] = re.sub("(signature:)", "", elemList[6])
             if re.search(r'\(\s*([^)]+?)\s*\)', elemList[6]):
-                parameterSpace = re.search(r'\(\s*([^)]+?)\s*\)', elemList[6])[1].split(", ")
+                parameterSpace = re.search(r'\(\s*([^)]+?)\s*\)', elemList[6]).group(1).split(", ")
                 for elem in parameterSpace:
                     elem = re.sub("(,)", "", elem)
                     functionInstance.parameterList.append(parameter.search(elem).group(0))
@@ -556,10 +600,10 @@ def parse_go_deep(file):
                         functionInstance.dataTypeList.append(re.search("\S+", elem).group(0))
 
             #Variables
-            filee = open("function.go", "w+", encoding="utf8")
+            filee = open("function.go", "w+", encoding="utf8", errors='ignore')
             filee.write(functionInstance.funcBody)
             filee.close()
-            Command1 = "ctags -f - --kinds-go=* --fields=neKS function.go"
+            Command1 = str(pathToCtags) + ' -f - --kinds-go=* --fields=neKS "function.go"'
             shellOutput = subprocess.check_output(Command1, stderr=subprocess.STDOUT, shell=True).decode()
             varList = []
             varList = shellOutput.split('\n')
@@ -575,19 +619,19 @@ def parse_go_deep(file):
 
 #Shallow JavaScript code parser using Universal-Ctags
 def parse_js_shallow(file):
-    Command = "ctags -f - --kinds-javascript=* --fields=neKS " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-javascript=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
 
     try:
         astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
-
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     functionList = astString.split('\n')
     func = re.compile(r'(function)')
@@ -635,7 +679,8 @@ def parse_js_shallow(file):
 
 #Shallow JavaScript code parser using Universal-Ctags
 def parse_js_deep(file):
-    Command = "ctags -f - --kinds-javascript=* --fields=neKS " + file
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-javascript=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -647,7 +692,7 @@ def parse_js_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8")
+    f = open(file, 'r', encoding="utf8", errors='ignore')
     lines = f.readlines()
     functionList = astString.split('\n')
     func = re.compile(r'(function)')
@@ -697,10 +742,10 @@ def parse_js_deep(file):
                 functionInstance.parameterList.append(parameter.search(elemList[5]).group(1))
 
             #Variables
-            filee = open("function.js", "w+", encoding="utf8")
+            filee = open("function.js", "w+", encoding="utf8", errors='ignore')
             filee.write(functionInstance.funcBody)
             filee.close()
-            Command1 = "ctags -f - --kinds-javascript=* --fields=neKS function.js"
+            Command1 = str(pathToCtags) + ' -f - --kinds-javascript=* --fields=neKS function.js'
             shellOutput = subprocess.check_output(Command1, stderr=subprocess.STDOUT, shell=True).decode()
             varList = []
             varList = shellOutput.split('\n')
@@ -709,69 +754,130 @@ def parse_js_deep(file):
                 elemsList = elemsList.split("\t")
                 if var != '' and len(elemsList) >= 4 and ((varRe.fullmatch(elemsList[3]) or variableRe.fullmatch(elemsList[3]))):
                     functionInstance.variableList.append(elemsList[0])
+
             functionInstanceList.append(functionInstance)
     return functionInstanceList
 
 
-def parse_c_deep(srcFileName, caller):
-    global javaCallCommand
+def parse_c_shallow(file):
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-C=* --fields=neKSt "' + file + '"'
     global delimiter
-    setEnvironment(caller)
-    # this parses function definition plus body.
-    javaCallCommand += ' ' + srcFileName
-    javaCallCommand += ' 1'
-    functionInstanceList = []
+    delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(javaCallCommand, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
         astString = ""
 
-    funcList = astString.split(delimiter)
-    for func in funcList[1:]:
-        functionInstance = function(srcFileName)
+    f = open(file, 'r', encoding="utf8", errors='ignore')
+    lines = f.readlines()
+    functionList = astString.split('\n')
+    func = re.compile(r'(function)')
+    number = re.compile(r'(\d+)')
+    funcBody = re.compile(r'{([\S\s]*)}')
+    string = ""
+    funcId = 1
+    functionInstanceList = []
 
-        elemsList = func.split('\n')[1:-1]
-        if len(elemsList) > 9:
-            functionInstance.parentNumLoc = int(elemsList[1])
-            functionInstance.name = elemsList[2]
-            functionInstance.lines = (int(elemsList[3].split('\t')[0]), int(elemsList[3].split('\t')[1]))
-            functionInstance.funcId = int(elemsList[4])
-            functionInstance.parameterList = elemsList[5].rstrip().split('\t')
-            functionInstance.variableList = elemsList[6].rstrip().split('\t')
-            functionInstance.dataTypeList = elemsList[7].rstrip().split('\t')
-            functionInstance.funcCalleeList = elemsList[8].rstrip().split('\t')
-            functionInstance.funcBody = '\n'.join(elemsList[9:])
+    for i in functionList:
+        elemList = re.sub(r'[\t\s ]{2,}', '', i)
+        elemList = elemList.split("\t")
+        functionInstance = function(file)
+        functionInstance.funcBody = ''
+        if i != '' and len(elemList) >= 8 and func.match(elemList[3]):
+            functionInstance.name = elemList[0]
+            functionInstance.parentFile = elemList[1]
+            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                    int(number.search(elemList[7]).group(0)))
+            functionInstance.parentNumLoc = len(lines)
+            string = ""
+            string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+            if funcBody.search(string):
+                functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
+            else:
+                functionInstance.funcBody = " "
+            functionInstance.funcId = funcId
+            funcId+=1
             functionInstanceList.append(functionInstance)
-
     return functionInstanceList
 
-def parse_c_shallow(srcFileName, caller):
-    # this does not parse body.
-    global javaCallCommand
+def parse_c_deep(file):
+    pathToCtags = resource_path("ctags")
+    Command = str(pathToCtags) + ' -f - --kinds-C=* --fields=neKSt "' + file + '"'
     global delimiter
-    setEnvironment(caller)
-    javaCallCommand += ' ' + srcFileName
-    javaCallCommand += ' 0'
-    functionInstanceList = []
+    delimiter = "\r\0?\r?\0\r"
+
     try:
-        astString = subprocess.check_output(javaCallCommand, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
         astString = ""
-    funcList = astString.split(delimiter)
-    for func in funcList[1:]:
-        functionInstance = function(srcFileName)
-        elemsList = func.split('\n')[1:-1]
-        if len(elemsList) > 9:
-            functionInstance.parentNumLoc = int(elemsList[1])
-            functionInstance.name = elemsList[2]
-            functionInstance.lines = (int(elemsList[3].split('\t')[0]), int(elemsList[3].split('\t')[1]))
-            functionInstance.funcId = int(elemsList[4])
-            functionInstance.funcBody = '\n'.join(elemsList[9:])
 
+    f = open(file, 'r', encoding="utf8", errors='ignore')
+    lines = f.readlines()
+    functionList = astString.split('\n')
+    local = re.compile(r'local')
+    parameter = re.compile(r'parameter')
+    func = re.compile(r'(func)')
+    parameterSpace = re.compile(r'\(\s*([^)]+?)\s*\)')
+    word = re.compile(r'\w+')
+    dataType = re.compile(r"(typeref:typename:)")
+    number = re.compile(r'(\d+)')
+    funcBody = re.compile(r'{([\S\s]*)}')
+    string = ""
+    funcId = 1
+    functionInstanceList = []
+    variables = []
+    parameters = []
+    dataTypes = []
+    for i in functionList:
+        elemList = re.sub(r'[\t\s ]{2,}', '', i)
+        elemList = elemList.split("\t")
+        if i != '' and len(elemList) >= 6 and local.match(elemList[3]):
+            variables.append(elemList)
+
+    for i in functionList:
+        elemList = re.sub(r'[\t\s ]{2,}', '', i)
+        elemList = elemList.split("\t")
+        if i != '' and len(elemList) >= 6 and parameter.match(elemList[3]):
+            parameters.append(elemList)
+
+    for i in functionList:
+        elemList = re.sub(r'[\t\s ]{2,}', '', i)
+        elemList = elemList.split("\t")
+        functionInstance = function(file)
+        functionInstance.funcBody = ''
+        if i != ''  and len(elemList) >= 8 and func.match(elemList[3]):
+            #Method body
+            functionInstance.name = elemList[0]
+            functionInstance.parentFile = elemList[1]
+            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                    int(number.search(elemList[7]).group(0)))
+            functionInstance.parentNumLoc = len(lines)
+            string = ""
+            string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+            if funcBody.search(string):
+                functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
+            else:
+                functionInstance.funcBody = " "
+            #Parameters
+            for param in parameters:
+                if len(param) >= 4 and functionInstance.lines[0] <= int(number.search(param[4]).group(0)) <= functionInstance.lines[1]:
+                    functionInstance.parameterList.append(param[0])
+                    if len(param) >= 5 and dataType.search(param[5]):
+                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", param[5])))
+            #Variables
+            for variable in variables:
+                if len(variable) >= 4 and functionInstance.lines[0] <= int(number.search(variable[4]).group(0)) <= functionInstance.lines[1]:
+                    functionInstance.variableList.append(variable[0])
+                    if len(variable) >= 5 and dataType.search(variable[5]):
+                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[5])))
+
+            functionInstance.funcId = funcId
+            funcId+=1
             functionInstanceList.append(functionInstance)
-
     return functionInstanceList

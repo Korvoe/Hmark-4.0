@@ -18,11 +18,9 @@ import webbrowser
 from hashlib import md5
 import webbrowser
 
-import multiprocessing
 import subprocess
 import parseutility2 as pu
 import version
-import get_cpu_count
 import json
 
 import argparse
@@ -113,39 +111,33 @@ def check_update():
     else:
         print("(up-to-date)")
 
-def parseFiles_shallow(f, lang):
-    if lang == "c":
-        functionInstanceList = pu.parse_c_shallow(f, 'GUI')
-        return (f, functionInstanceList, lang)
-    elif lang == "java":
-        functionInstanceList = pu.parse_java_shallow(f)
-        return (f, functionInstanceList, lang)
-    elif lang == "python":
-        functionInstanceList = pu.parse_python_shallow(f)
-        return (f, functionInstanceList, lang)
-    elif lang == "go":
-        functionInstanceList = pu.parse_go_shallow(f)
-        return (f, functionInstanceList, lang)
-    elif lang == "javascript":
-        functionInstanceList = pu.parse_js_shallow(f)
-        return (f, functionInstanceList, lang)
+def parseFiles_shallow(f):
+    if f[1] == "c":
+        functionInstanceList = pu.parse_c_shallow(f[0])
+    elif f[1] == "java":
+        functionInstanceList = pu.parse_java_shallow(f[0])
+    elif f[1] == "python":
+        functionInstanceList = pu.parse_python_shallow(f[0])
+    elif f[1] == "go":
+        functionInstanceList = pu.parse_go_shallow(f[0])
+    elif f[1] == "javascript":
+        functionInstanceList = pu.parse_js_shallow(f[0])
 
-def parseFiles_deep(f, lang):
-    if lang == "c":
-        functionInstanceList = pu.parse_c_deep(f, 'GUI')
-        return (f, functionInstanceList, lang)
-    elif lang == "java":
-        functionInstanceList = pu.parse_java_deep(f)
-        return (f, functionInstanceList, lang)
-    elif lang == "python":
-        functionInstanceList = pu.parse_python_deep(f)
-        return (f, functionInstanceList, lang)
-    elif lang == "go":
-        functionInstanceList = pu.parse_go_deep(f)
-        return (f, functionInstanceList, lang)
-    elif lang == "javascript":
-        functionInstanceList = pu.parse_js_deep(f)
-        return (f, functionInstanceList, lang)
+    return (f[0], functionInstanceList, f[1])
+
+def parseFiles_deep(f):
+    if f[1] == "c":
+        functionInstanceList = pu.parse_c_deep(f[0])
+    elif f[1] == "java":
+        functionInstanceList = pu.parse_java_deep(f[0])
+    elif f[1] == "python":
+        functionInstanceList = pu.parse_python_deep(f[0])
+    elif f[1] == "go":
+        functionInstanceList = pu.parse_go_deep(f[0])
+    elif f[1] == "javascript":
+        functionInstanceList = pu.parse_js_deep(f[0])
+
+    return (f[0], functionInstanceList, f[1])
 
 
 class App:
@@ -318,16 +310,14 @@ class App:
             else:
                 func = parseFiles_deep
 
-            cpu_count = get_cpu_count.get_cpu_count()
-            if cpu_count != 1:
-                cpu_count -= 1
-
-            pool = multiprocessing.Pool(processes=cpu_count)
             listOfHashJsons = []
-            for idx, tup in enumerate(pool.starmap(func, tupleList)):
-                f = tup[0]
-                functionInstanceList = tup[1]
-                language = tup[2]
+            parseResult = {}
+
+            for idx, tup in enumerate(tupleList):
+                parseResult = func(tup)
+                f = parseResult[0]
+                functionInstanceList = parseResult[1]
+                language = parseResult[2]
                 pathOnly = f.split(proj, 1)[1][1:]
                 progress = float(idx + 1) / numFile
 
@@ -345,7 +335,7 @@ class App:
                     path = f.parentFile
                     origBody, absBody = pu.new_abstract(f, absLevel, language)
                     absBody = pu.normalize(absBody)
-                    funcLen = len(origBody)
+                    funcLen = len(absBody)
 
                     Json = {}
                     if funcLen > 50:
@@ -357,6 +347,7 @@ class App:
                         listOfHashJsons.append(Json)
                     else:
                         numFunc -= 1  # decrement numFunc by 1 if funclen is under threshold
+
             self.listProcess.insert(Tkinter.END, "")
             self.listProcess.insert(Tkinter.END, "Hash index successfully generated.")
             self.listProcess.see("end")
@@ -549,16 +540,14 @@ def generate_cli(targetPath, isAbstraction):
         else:
             func = parseFiles_deep
 
-        cpu_count = get_cpu_count.get_cpu_count()
-        if cpu_count != 1:
-            cpu_count -= 1
-
-        pool = multiprocessing.Pool(processes=cpu_count)
         listOfHashJsons = []
-        for idx, tup in enumerate(pool.starmap(func, tupleList)):
-            f = tup[0]
-            functionInstanceList = tup[1]
-            language = tup[2]
+        parseResult = {}
+
+        for idx, tup in enumerate(tupleList):
+            parseResult = func(tup)
+            f = parseResult[0]
+            functionInstanceList = parseResult[1]
+            language = parseResult[2]
 
             pathOnly = f.split(proj, 1)[1][1:]
 
@@ -589,7 +578,7 @@ def generate_cli(targetPath, isAbstraction):
                 path = f.parentFile
                 origBody, absBody = pu.new_abstract(f, absLevel, language)
                 absBody = pu.normalize(absBody)
-                funcLen = len(origBody)
+                funcLen = len(absBody)
                 Json = {}
                 if funcLen > 50:
                     hashValue = md5(absBody.encode('utf-8')).hexdigest()
@@ -723,14 +712,7 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-try:
-    # Python 3.4+
-    if sys.platform.startswith("win"):
-        import multiprocessing.popen_spawn_win32 as forking
-    else:
-        import multiprocessing.popen_fork as forking
-except ImportError:
-    import multiprocessing.forking as forking
+
 
 if sys.platform.startswith("win"):
     # First define a modified version of Popen.
@@ -759,5 +741,4 @@ if sys.platform.startswith("win"):
 
 """ EXECUTE """
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     main()
