@@ -673,14 +673,6 @@ def main():
     else:
         check_update()
 
-    if osName == "linux" or osName == "osx":
-        try:
-            msg = subprocess.check_output("java -version", stderr=subprocess.STDOUT, shell=True)
-        except subprocess.CalledProcessError as e:
-            print("Java error:", e)
-            print("Please try again after installing JDK.")
-            sys.exit()
-
     if args.cli_mode:
         if os.path.isdir(args.cli_mode[0]) is False:
             print("[-] Directory does not exist:", args.cli_mode[0])
