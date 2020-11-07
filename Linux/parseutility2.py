@@ -473,6 +473,7 @@ def parse_go_shallow(file):
     func = re.compile(r'(func)')
     number = re.compile(r'(\d+)')
     funcBody = re.compile(r'{([\S\s]*)}')
+
     string = " "
     firstLine = 0
     funcId = 1
@@ -504,7 +505,6 @@ def parse_go_shallow(file):
             elif func.search(lines[functionInstance.lines[0]-2]):
                 string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
 
-
             if funcBody.search(string):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
@@ -512,7 +512,6 @@ def parse_go_shallow(file):
             functionInstance.funcId = funcId
             funcId += 1
             functionInstanceList.append(functionInstance)
-
     return functionInstanceList
 
 #Deep GO code parser using Universal-Ctags
@@ -538,9 +537,11 @@ def parse_go_deep(file):
     func = re.compile(r'(func)')
     number = re.compile(r'(\d+)')
     funcBody = re.compile(r'{([\S\s]*)}')
+
     string = " "
     firstLine = 0
     funcId = 1
+
     for i in functionList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
         elemList = elemList.split("\t")
@@ -612,7 +613,6 @@ def parse_go_deep(file):
                 elemsList = elemsList.split("\t")
                 if var != '' and (varRe.match(elemsList[3]) or varRe.match(elemsList[4])):
                     functionInstance.variableList.append(elemsList[0])
-
             functionInstanceList.append(functionInstance)
 
     return functionInstanceList

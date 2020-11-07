@@ -336,7 +336,6 @@ class App:
                     origBody, absBody = pu.new_abstract(f, absLevel, language)
                     absBody = pu.normalize(absBody)
                     funcLen = len(absBody)
-
                     Json = {}
                     if funcLen > 50:
                         hashValue = md5(absBody.encode('utf-8')).hexdigest()
@@ -672,14 +671,6 @@ def main():
         print("Bypassed the update checker.")
     else:
         check_update()
-
-    if osName == "linux" or osName == "osx":
-        try:
-            msg = subprocess.check_output("java -version", stderr=subprocess.STDOUT, shell=True)
-        except subprocess.CalledProcessError as e:
-            print("Java error:", e)
-            print("Please try again after installing JDK.")
-            sys.exit()
 
     if args.cli_mode:
         if os.path.isdir(args.cli_mode[0]) is False:
