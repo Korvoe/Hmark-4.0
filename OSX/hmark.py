@@ -615,6 +615,14 @@ def generate_cli(targetPath, isAbstraction):
         print("")
         print("[+] Hash index saved to: " + os.getcwd().replace("\\", "/") + "/hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx")
 
+def allow_ctags():
+    pathToCtags = resource_path("ctags")
+    Command = 'xattr -dr com.apple.quarantine "' + pathToCtags + '"'
+    try:
+        msg = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True)
+    except subprocess.CalledProcessError as e:
+        print("Terminal script error:", e)
+        sys.exit()
 
 def run_cli(targetPath, isAbstraction):
     generate_cli(targetPath, isAbstraction)
@@ -636,6 +644,7 @@ def main():
         progStr = "./" + progStr + "_x" + bits
     elif osName == "osx":
         progStr = "./" + progStr
+        allow_ctags() # Terminal command to allow ctags on MacOS
 
     ap = argparse.ArgumentParser(prog=progStr)
 
