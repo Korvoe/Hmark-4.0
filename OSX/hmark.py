@@ -617,12 +617,11 @@ def generate_cli(targetPath, isAbstraction):
 
 def allow_ctags():
     pathToCtags = resource_path("ctags")
-    Command = 'xattr -dr com.apple.quarantine "' + pathToCtags + '"'
+    Command = 'xattr -r -d com.apple.quarantine "' + pathToCtags + '"'
     try:
         msg = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True)
     except subprocess.CalledProcessError as e:
         print("Terminal script error:", e)
-        sys.exit()
 
 def run_cli(targetPath, isAbstraction):
     generate_cli(targetPath, isAbstraction)
