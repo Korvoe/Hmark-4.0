@@ -765,7 +765,6 @@ def parse_c_shallow(file):
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
-    print(file)
     try:
         astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
