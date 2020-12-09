@@ -236,7 +236,7 @@ def parse_java_shallow(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -282,7 +282,7 @@ def parse_java_deep(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -351,7 +351,7 @@ def parse_python_shallow(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -392,7 +392,7 @@ def parse_python_deep(file):
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -461,7 +461,7 @@ def parse_go_shallow(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -523,7 +523,7 @@ def parse_go_deep(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -626,7 +626,7 @@ def parse_js_shallow(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
         astString = ""
@@ -686,7 +686,7 @@ def parse_js_deep(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -766,7 +766,7 @@ def parse_c_shallow(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -787,7 +787,7 @@ def parse_c_shallow(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 8 and func.match(elemList[3]):
+        if i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3]):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
@@ -811,7 +811,7 @@ def parse_c_deep(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode()
+        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -822,7 +822,7 @@ def parse_c_deep(file):
     functionList = astString.split('\n')
     local = re.compile(r'local')
     parameter = re.compile(r'parameter')
-    func = re.compile(r'(func)')
+    func = re.compile(r'(function)')
     parameterSpace = re.compile(r'\(\s*([^)]+?)\s*\)')
     word = re.compile(r'\w+')
     dataType = re.compile(r"(typeref:typename:)")
@@ -851,7 +851,7 @@ def parse_c_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != ''  and len(elemList) >= 8 and func.match(elemList[3]):
+        if i != ''  and len(elemList) >= 8 and func.fullmatch(elemList[3]):
             #Method body
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
