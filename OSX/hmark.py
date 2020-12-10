@@ -340,7 +340,8 @@ class App:
                     Json = {}
                     if funcLen > 50:
                         hashValue = md5(absBody.encode('utf-8')).hexdigest()
-                        Json["file"] = str(f.parentFile.split(str(proj)+"/")[1])
+                        cutLength = len(str(f.parentFile.split(str(proj)+"/")[0]) + str(proj) + "/")
+                        Json["file"] = str(f.parentFile[cutLength:])
                         Json["function id"] = f.funcId
                         Json["function length"] = funcLen
                         Json["hash value"] = hashValue
@@ -582,7 +583,8 @@ def generate_cli(targetPath, isAbstraction):
                 Json = {}
                 if funcLen > 50:
                     hashValue = md5(absBody.encode('utf-8')).hexdigest()
-                    Json["file"] = str(f.parentFile.split(str(proj)+"/")[1])
+                    cutLength = len(str(f.parentFile.split(str(proj)+"/")[0]) + str(proj) + "/")
+                    Json["file"] = str(f.parentFile[cutLength:])
                     Json["function id"] = f.funcId
                     Json["function length"] = funcLen
                     Json["hash value"] = hashValue
