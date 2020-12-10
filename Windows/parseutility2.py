@@ -809,7 +809,7 @@ def parse_c_deep(file):
     Command = str(pathToCtags) + ' -f - --kinds-C=* --fields=neKSt "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
-
+    print(file)
     try:
         astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
@@ -825,7 +825,7 @@ def parse_c_deep(file):
     func = re.compile(r'(function)')
     parameterSpace = re.compile(r'\(\s*([^)]+?)\s*\)')
     word = re.compile(r'\w+')
-    dataType = re.compile(r"(typeref:typename:)")
+    dataType = re.compile(r"(typeref:)\w*(:)")
     number = re.compile(r'(\d+)')
     funcBody = re.compile(r'{([\S\s]*)}')
     string = ""
@@ -837,13 +837,13 @@ def parse_c_deep(file):
     for i in functionList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
         elemList = elemList.split("\t")
-        if i != '' and len(elemList) >= 6 and local.match(elemList[3]):
+        if i != '' and len(elemList) >= 6 and (local.fullmatch(elemList[3]) or local.fullmatch(elemList[4])):
             variables.append(elemList)
 
     for i in functionList:
         elemList = re.sub(r'[\t\s ]{2,}', '', i)
         elemList = elemList.split("\t")
-        if i != '' and len(elemList) >= 6 and parameter.match(elemList[3]):
+        if i != '' and len(elemList) >= 6 and (parameter.match(elemList[3]) or parameter.fullmatch(elemList[4])):
             parameters.append(elemList)
 
     for i in functionList:
@@ -852,7 +852,6 @@ def parse_c_deep(file):
         functionInstance = function(file)
         functionInstance.funcBody = ''
         if i != ''  and len(elemList) >= 8 and func.fullmatch(elemList[3]):
-
             #Method body
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
@@ -865,18 +864,31 @@ def parse_c_deep(file):
                 functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
             else:
                 functionInstance.funcBody = " "
+            lineNumber = 0
             #Parameters
             for param in parameters:
-                if len(param) >= 4 and functionInstance.lines[0] <= int(number.search(param[4]).group(0)) <= functionInstance.lines[1]:
+                if number.search(param[4]):
+                    lineNumber = int(number.search(param[4]).group(0))
+                elif number.search(param[5]):
+                    lineNumber = int(number.search(param[5]).group(0))
+                if len(param) >= 4 and functionInstance.lines[0] <= int(lineNumber) <= functionInstance.lines[1]:
                     functionInstance.parameterList.append(param[0])
-                    if len(param) >= 5 and dataType.search(param[5]):
+                    if len(param) >= 6 and dataType.search(param[5]):
                         functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", param[5])))
+                    elif len(param) >= 7 and dataType.search(param[6]):
+                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", param[6])))
             #Variables
             for variable in variables:
-                if len(variable) >= 4 and functionInstance.lines[0] <= int(number.search(variable[4]).group(0)) <= functionInstance.lines[1]:
+                if number.search(variable[4]):
+                    lineNumber = int(number.search(variable[4]).group(0))
+                elif number.search(variable[5]):
+                    lineNumber = int(number.search(variable[5]).group(0))
+                if len(variable) >= 4 and functionInstance.lines[0] <= int(lineNumber) <= functionInstance.lines[1]:
                     functionInstance.variableList.append(variable[0])
-                    if len(variable) >= 5 and dataType.search(variable[5]):
+                    if len(variable) >= 6 and dataType.search(variable[5]):
                         functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[5])))
+                    elif len(variable) >= 7 and dataType.search(variable[6]):
+                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[6])))                        
 
             functionInstance.funcId = funcId
             funcId+=1
