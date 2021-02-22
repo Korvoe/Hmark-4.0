@@ -25,4 +25,4 @@ You can see the help message by passing an '-h' (or '--help')argument.
     -n, --no-updatecheck     bypass update checking
     -V, --version            print the Hmark version
 '''
-4. Upload the '.hidx' file on IoTcube's testing.
+4. Upload the '.hidx' file on IoTcube's (https://iotcube.net/process/type/wf1) testing.
