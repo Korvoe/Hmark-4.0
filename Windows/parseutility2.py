@@ -72,8 +72,12 @@ def loadSource(rootDirectory):
             or ext.endswith('.cxx') or ext.endswith('.java')
             or ext.endswith('.py')) or ext.endswith('.go') or ext.endswith('.js'):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
+                absPathWithFileName = absPathWithFileName.strip('/n')
                 if maxFileSizeInBytes is not None:
-                    if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
+                    try:
+                        if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
+                            file = absPathWithFileName
+                    except:
                         file = absPathWithFileName
                 else:
                     file = absPathWithFileName
@@ -105,7 +109,7 @@ def loadVul(rootDirectory):
             if fileName.endswith('OLD.vul'):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
                 if maxFileSizeInBytes is not None:
-                    if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
+                    if os.stat(u'{}'.format(absPathWithFileName)).st_size < maxFileSizeInBytes:
                         srcFileList.append(absPathWithFileName)
                 else:
                     srcFileList.append(absPathWithFileName)
@@ -236,7 +240,7 @@ def parse_java_shallow(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -282,7 +286,7 @@ def parse_java_deep(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -351,7 +355,7 @@ def parse_python_shallow(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -392,7 +396,7 @@ def parse_python_deep(file):
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -461,7 +465,7 @@ def parse_go_shallow(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -524,7 +528,7 @@ def parse_go_deep(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -626,7 +630,7 @@ def parse_js_shallow(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
         astString = ""
@@ -686,7 +690,7 @@ def parse_js_deep(file):
     functionInstanceList = []
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -766,7 +770,7 @@ def parse_c_shallow(file):
     delimiter = "\r\0?\r?\0\r"
 
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
@@ -811,7 +815,7 @@ def parse_c_deep(file):
     delimiter = "\r\0?\r?\0\r"
     print(file)
     try:
-        astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+        astString = subprocess.check_output(r'{}'.format(Command), stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)

@@ -72,6 +72,7 @@ def loadSource(rootDirectory):
             or ext.endswith('.cxx') or ext.endswith('.java')
             or ext.endswith('.py')) or ext.endswith('.go') or ext.endswith('.js'):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
+                absPathWithFileName = absPathWithFileName.strip()
                 if maxFileSizeInBytes is not None:
                     if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
                         file = absPathWithFileName
