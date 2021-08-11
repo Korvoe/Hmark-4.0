@@ -72,10 +72,13 @@ def loadSource(rootDirectory):
             or ext.endswith('.cxx') or ext.endswith('.java')
             or ext.endswith('.py')) or ext.endswith('.go') or ext.endswith('.js'):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
-                absPathWithFileName = absPathWithFileName.strip()
+                absPathWithFileName = absPathWithFileName.strip('\n')
                 if maxFileSizeInBytes is not None:
-                    if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
-                        file = absPathWithFileName
+                    try:
+                        if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
+                            file = absPathWithFileName
+                    except:
+                        pass
                 else:
                     file = absPathWithFileName
                 if ext.endswith('.java'):
@@ -106,7 +109,7 @@ def loadVul(rootDirectory):
             if fileName.endswith('OLD.vul'):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
                 if maxFileSizeInBytes is not None:
-                    if os.path.getsize(absPathWithFileName) < maxFileSizeInBytes:
+                    if os.stat(u'{}'.format(absPathWithFileName)).st_size < maxFileSizeInBytes:
                         srcFileList.append(absPathWithFileName)
                 else:
                     srcFileList.append(absPathWithFileName)
@@ -243,8 +246,12 @@ def parse_java_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     methodList = astString.split('\n')
     method = re.compile(r'(method)')
     number = re.compile(r'(\d+)')
@@ -289,8 +296,12 @@ def parse_java_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     methodList = astString.split('\n')
     local = re.compile(r'local')
     method = re.compile(r'(method)')
@@ -358,8 +369,12 @@ def parse_python_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     methodList = astString.split('\n')
     member = re.compile(r'(member)')
     func = re.compile(r'(function)')
@@ -372,7 +387,7 @@ def parse_python_shallow(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])):
+        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])) and number.search(elemList[4]) is not None and number.search(elemList[5]) is not None:
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.funcId = funcId
@@ -399,8 +414,12 @@ def parse_python_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     methodList = astString.split('\n')
     member = re.compile(r'(member)')
     func = re.compile(r'(function)')
@@ -431,7 +450,7 @@ def parse_python_deep(file):
         elemList = elemList.split("\t")
         methodInstance = function(file)
         methodInstance.funcBody = ''
-        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])):
+        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])) and number.search(elemList[4]) is not None and number.search(elemList[5]) is not None:
             methodInstance.name = elemList[0]
             methodInstance.parentFile = elemList[1]
             methodInstance.lines = (int(number.search(elemList[4]).group(0)),
@@ -468,8 +487,12 @@ def parse_go_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     functionList = astString.split('\n')
     func = re.compile(r'(func)')
     number = re.compile(r'(\d+)')
@@ -484,7 +507,7 @@ def parse_go_shallow(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3])  and re.match(r"(end:)(\d+)", elemList[7]):
+        if lines != "" and i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3])  and re.match(r"(end:)(\d+)", elemList[7]):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
@@ -530,8 +553,12 @@ def parse_go_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     functionList = astString.split('\n')
     varRe = re.compile(r'(var)')
     dataType = re.compile(r'')
@@ -548,7 +575,7 @@ def parse_go_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != ''  and len(elemList) >= 8 and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4]))  and re.match(r"(end:)(\d+)", elemList[7]):
+        if lines != "" and i != ''  and len(elemList) >= 8 and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4]))  and re.match(r"(end:)(\d+)", elemList[7]):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
@@ -628,12 +655,17 @@ def parse_js_shallow(file):
 
     try:
         astString = subprocess.check_output(Command, stderr=subprocess.STDOUT, shell=True).decode(errors='ignore')
+
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     functionList = astString.split('\n')
     func = re.compile(r'(function)')
     method = re.compile(r'(method)')
@@ -649,7 +681,7 @@ def parse_js_shallow(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
+        if lines != "" and i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
@@ -693,8 +725,12 @@ def parse_js_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     functionList = astString.split('\n')
     func = re.compile(r'(function)')
     varRe = re.compile(r'(var)')
@@ -712,7 +748,7 @@ def parse_js_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
+        if lines != "" and i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.parentNumLoc = len(lines)
@@ -773,8 +809,12 @@ def parse_c_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     functionList = astString.split('\n')
     func = re.compile(r'(function)')
     number = re.compile(r'(\d+)')
@@ -788,7 +828,7 @@ def parse_c_shallow(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3]):
+        if lines != "" and i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3]):
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
             functionInstance.lines = (int(number.search(elemList[4]).group(0)),
@@ -818,8 +858,12 @@ def parse_c_deep(file):
         print("Parser Error:", e)
         astString = ""
 
-    f = open(file, 'r', encoding="utf8", errors='ignore')
-    lines = f.readlines()
+    try:
+        f = open(file, 'r', encoding="utf8", errors='ignore')
+        lines = f.readlines()
+    except:
+        lines = ""
+
     functionList = astString.split('\n')
     local = re.compile(r'local')
     parameter = re.compile(r'parameter')
@@ -852,7 +896,7 @@ def parse_c_deep(file):
         elemList = elemList.split("\t")
         functionInstance = function(file)
         functionInstance.funcBody = ''
-        if i != ''  and len(elemList) >= 8 and func.fullmatch(elemList[3]):
+        if lines != "" and i != ''  and len(elemList) >= 8 and func.fullmatch(elemList[3]):
             #Method body
             functionInstance.name = elemList[0]
             functionInstance.parentFile = elemList[1]
@@ -889,7 +933,7 @@ def parse_c_deep(file):
                     if len(variable) >= 6 and dataType.search(variable[5]):
                         functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[5])))
                     elif len(variable) >= 7 and dataType.search(variable[6]):
-                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[6])))                        
+                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[6])))
 
             functionInstance.funcId = funcId
             funcId+=1

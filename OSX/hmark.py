@@ -3,6 +3,10 @@
 Version 3.0~ of Hashmarker (CSSA)
 Author: Seulbae Kim (seulbae@korea.ac.kr)
 http://github.com/squizz617/discovuler-advanced/hmark
+
+Version 4.0~ of Hashmarker (CSSA)
+Author: Ibragim Shauidbek (indestructible228@gmail.com)
+https://github.com/Korvoe/Hmark-4.0
 """
 
 import urllib.request
@@ -342,9 +346,9 @@ class App:
                         hashValue = md5(absBody.encode('utf-8')).hexdigest()
                         cutLength = len(str(f.parentFile.split(str(proj)+"/")[0]) + str(proj) + "/")
                         Json["file"] = str(f.parentFile[cutLength:])
-                        Json["function id"] = f.funcId
-                        Json["function length"] = funcLen
-                        Json["hash value"] = hashValue
+                        Json["function id"] = str(f.funcId)
+                        Json["function length"] = str(funcLen)
+                        Json["hash value"] = str(hashValue)
                         listOfHashJsons.append(Json)
                     else:
                         numFunc -= 1  # decrement numFunc by 1 if funclen is under threshold
@@ -362,7 +366,7 @@ class App:
             except:
                 pass
             packageInfo = str(localVersion) + ' ' + str(proj) + ' ' + str(numFile) + ' ' + str(numFunc) + ' ' + str(numLine) + '\n'
-            with open("hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx", 'w') as fp:
+            with open("hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx", 'w', encoding="utf-8") as fp:
                 fp.write(packageInfo)
                 fp.write(str(listOfHashJsons))
 
@@ -585,9 +589,9 @@ def generate_cli(targetPath, isAbstraction):
                     hashValue = md5(absBody.encode('utf-8')).hexdigest()
                     cutLength = len(str(f.parentFile.split(str(proj)+"/")[0]) + str(proj) + "/")
                     Json["file"] = str(f.parentFile[cutLength:])
-                    Json["function id"] = f.funcId
-                    Json["function length"] = funcLen
-                    Json["hash value"] = hashValue
+                    Json["function id"] = str(f.funcId)
+                    Json["function length"] = str(funcLen)
+                    Json["hash value"] = str(hashValue)
                     listOfHashJsons.append(Json)
                 else:
                     numFunc -= 1  # decrement numFunc by 1 if funclen is under threshold
@@ -601,7 +605,7 @@ def generate_cli(targetPath, isAbstraction):
         except:
             pass
         packageInfo = str(localVersion) + ' ' + str(proj) + ' ' + str(numFile) + ' ' + str(numFunc) + ' ' + str(numLine) + '\n'
-        with open("hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx", 'w') as fp:
+        with open("hidx/hashmark_" + str(absLevel) + "_" + proj + ".hidx", 'w', encoding="utf-8") as fp:
             fp.write(packageInfo)
             fp.write(str(listOfHashJsons))
 
@@ -629,7 +633,7 @@ def run_cli(targetPath, isAbstraction):
     generate_cli(targetPath, isAbstraction)
     print("Farewell!")
 
-
+    
 def main():
     try:
         os.mkdir("hidx")
