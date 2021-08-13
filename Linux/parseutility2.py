@@ -64,6 +64,7 @@ def loadSource(rootDirectory):
     # the maximum file size that you process.
     walkList = os.walk(rootDirectory)
     srcFileList = []
+    possible_ext = ('.c', '.cpp', '.cc', '.c++', '.cxx', '.java', '.py', '.go', '.js')
     for path, dirs, files in walkList:
         for fileName in files:
             ext = fileName.lower()
@@ -235,7 +236,7 @@ delimiter = "\r\0?\r?\0\r"
 #Shallow JAVA code parser using Universal-Ctags
 def parse_java_shallow(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-java=* --fields=neKS "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-java=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -244,6 +245,9 @@ def parse_java_shallow(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -260,32 +264,36 @@ def parse_java_shallow(file):
     funcId = 1
     methodInstanceList = []
 
-    for i in methodList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        methodInstance = function(file)
-        methodInstance.funcBody = ''
-        if i != '' and len(elemList) >= 7 and method.match(elemList[3]):
-            methodInstance.name = elemList[0]
-            methodInstance.parentFile = elemList[1]
-            methodInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[6]).group(0)))
-            methodInstance.parentNumLoc = len(lines)
-            string = ""
-            string = string.join(lines[methodInstance.lines[0]-1:methodInstance.lines[1]])
-            if funcBody.search(string):
-                methodInstance.funcBody = methodInstance.funcBody + funcBody.search(string).group(1)
-            else:
-                methodInstance.funcBody = " "
-            methodInstance.funcId = funcId
-            funcId+=1
-            methodInstanceList.append(methodInstance)
+    if lines != "":
+        for i in methodList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                methodInstance = function(file)
+                methodInstance.funcBody = ''
+                if i != '' and len(elemList) >= 7 and method.match(elemList[3]):
+                    methodInstance.name = elemList[0]
+                    methodInstance.parentFile = elemList[1]
+                    methodInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                            int(number.search(elemList[6]).group(0)))
+                    methodInstance.parentNumLoc = len(lines)
+                    string = ""
+                    string = string.join(lines[methodInstance.lines[0]-1:methodInstance.lines[1]])
+                    if funcBody.search(string):
+                        methodInstance.funcBody = methodInstance.funcBody + funcBody.search(string).group(1)
+                    else:
+                        methodInstance.funcBody = " "
+                    methodInstance.funcId = funcId
+                    funcId+=1
+                    methodInstanceList.append(methodInstance)
+            except:
+                continue
     return methodInstanceList
 
 #Deep JAVA code parser using Universal-Ctags
 def parse_java_deep(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-java=* --fields=neKS "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-java=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -294,6 +302,9 @@ def parse_java_deep(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -314,51 +325,59 @@ def parse_java_deep(file):
     funcId = 1
     methodInstanceList = []
     variables = []
-    for i in methodList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        if i != '' and len(elemList) >= 6 and local.match(elemList[3]):
-            variables.append(elemList)
-    for i in methodList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        methodInstance = function(file)
-        methodInstance.funcBody = ''
-        if i != ''  and len(elemList) >= 7 and method.match(elemList[3]):
-            #Parameters and data types
-            if (parameterSpace.search(elemList[5])):
-                for i in parameterSpace.search(elemList[5])[1].split(", "):
-                    if len(word.findall(i)) > 1:
-                        methodInstance.parameterList.append(word.findall(i)[1])
-                        methodInstance.dataTypeList.append(word.findall(i)[0])
-            #Method body
-            methodInstance.name = elemList[0]
-            methodInstance.parentFile = elemList[1]
-            methodInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[6]).group(0)))
-            methodInstance.parentNumLoc = len(lines)
-            string = ""
-            string = string.join(lines[methodInstance.lines[0]-1:methodInstance.lines[1]])
-            if funcBody.search(string):
-                methodInstance.funcBody = methodInstance.funcBody + funcBody.search(string).group(1)
-            else:
-                methodInstance.funcBody = " "
-            #Variables
-            for var in variables:
-                if methodInstance.lines[0] <= int((number.search(var[4]).group(0))) <= methodInstance.lines[1]:
-                    varDtype = re.compile(r'\w+(?=\s+' + str(var[0]) + ')')
-                    if  varDtype.search(var[2]):
-                        methodInstance.dataTypeList.append(varDtype.search(var[2]).group(0))
-                        methodInstance.variableList.append(var[0])
-            methodInstance.funcId = funcId
-            funcId+=1
-            methodInstanceList.append(methodInstance)
+
+    if lines != "":
+        for i in methodList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                if i != '' and len(elemList) >= 6 and local.match(elemList[3]):
+                    variables.append(elemList)
+            except:
+                continue
+        for i in methodList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                methodInstance = function(file)
+                methodInstance.funcBody = ''
+                if i != ''  and len(elemList) >= 7 and method.match(elemList[3]):
+                    #Parameters and data types
+                    if (parameterSpace.search(elemList[5])):
+                        for i in parameterSpace.search(elemList[5])[1].split(", "):
+                            if len(word.findall(i)) > 1:
+                                methodInstance.parameterList.append(word.findall(i)[1])
+                                methodInstance.dataTypeList.append(word.findall(i)[0])
+                    #Method body
+                    methodInstance.name = elemList[0]
+                    methodInstance.parentFile = elemList[1]
+                    methodInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                            int(number.search(elemList[6]).group(0)))
+                    methodInstance.parentNumLoc = len(lines)
+                    string = ""
+                    string = string.join(lines[methodInstance.lines[0]-1:methodInstance.lines[1]])
+                    if funcBody.search(string):
+                        methodInstance.funcBody = methodInstance.funcBody + funcBody.search(string).group(1)
+                    else:
+                        methodInstance.funcBody = " "
+                    #Variables
+                    for var in variables:
+                        if methodInstance.lines[0] <= int((number.search(var[4]).group(0))) <= methodInstance.lines[1]:
+                            varDtype = re.compile(r'\w+(?=\s+' + str(var[0]) + ')')
+                            if  varDtype.search(var[2]):
+                                methodInstance.dataTypeList.append(varDtype.search(var[2]).group(0))
+                                methodInstance.variableList.append(var[0])
+                    methodInstance.funcId = funcId
+                    funcId+=1
+                    methodInstanceList.append(methodInstance)
+            except:
+                continue
     return methodInstanceList
 
 #Shallow PYTHON code parser using Universal-Ctags
 def parse_python_shallow(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-python=* --fields=neK "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-python=* --fields=neK "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -367,6 +386,9 @@ def parse_python_shallow(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -382,29 +404,32 @@ def parse_python_shallow(file):
     methodInstanceList = []
     funcId = 1
 
-    for i in methodList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        methodInstance = function(file)
-        methodInstance.funcBody = ''
-        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])) and number.search(elemList[4]) is not None and number.search(elemList[5]) is not None:
-            methodInstance.name = elemList[0]
-            methodInstance.parentFile = elemList[1]
-            methodInstance.funcId = funcId
-            methodInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[5]).group(0)))
-            methodInstance.parentNumLoc = len(lines)
-            for line in range(methodInstance.lines[0], methodInstance.lines[1]):
-                methodInstance.funcBody = methodInstance.funcBody + (lines[line])
-            funcId += 1
-            methodInstanceList.append(methodInstance)
-
+    if lines != "":
+        for i in methodList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                methodInstance = function(file)
+                methodInstance.funcBody = ''
+                if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])) and number.search(elemList[4]) is not None and number.search(elemList[5]) is not None:
+                    methodInstance.name = elemList[0]
+                    methodInstance.parentFile = elemList[1]
+                    methodInstance.funcId = funcId
+                    methodInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                            int(number.search(elemList[5]).group(0)))
+                    methodInstance.parentNumLoc = len(lines)
+                    for line in range(methodInstance.lines[0], methodInstance.lines[1]):
+                        methodInstance.funcBody = methodInstance.funcBody + (lines[line])
+                    funcId += 1
+                    methodInstanceList.append(methodInstance)
+            except:
+                continue
     return methodInstanceList
 
 #Deep PYTHON code parser using Universal-Ctags
 def parse_python_deep(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-python=* --fields=neK "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-python=* --fields=neK "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     try:
@@ -412,6 +437,9 @@ def parse_python_deep(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -430,52 +458,61 @@ def parse_python_deep(file):
     variables = []
     parameters = []
     funcId = 1
-    #Variables list
-    for i in methodList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        if i != '' and local.match(elemList[3]):
-            variables.append(elemList)
 
-    #Parameters list
-    for i in methodList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        if i != '' and elemList[0] != 'self' and parameter.match(elemList[3]):
-            parameters.append(elemList)
+    if lines != "":
+        #Variables list
+        for i in methodList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                if i != '' and local.match(elemList[3]):
+                    variables.append(elemList)
+            except:
+                continue
 
-    #Function
-    for i in methodList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        methodInstance = function(file)
-        methodInstance.funcBody = ''
-        if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])) and number.search(elemList[4]) is not None and number.search(elemList[5]) is not None:
-            methodInstance.name = elemList[0]
-            methodInstance.parentFile = elemList[1]
-            methodInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[5]).group(0)))
-            methodInstance.parentNumLoc = len(lines)
-            for line in range(methodInstance.lines[0], methodInstance.lines[1]):
-                methodInstance.funcBody = methodInstance.funcBody + (lines[line])
-            methodInstance.funcId = funcId
-            funcId += 1
-            #Variables
-            for var in variables:
-                if methodInstance.lines[0] <= int(number.search(var[4]).group(0)) <= methodInstance.lines[1]:
-                    methodInstance.variableList.append(var[0])
-                    #Parameters
-            for param in parameters:
-                if methodInstance.lines[0] <= int(number.search(param[4]).group(0)) <= methodInstance.lines[1]:
-                    methodInstance.parameterList.append(param[0])
-            methodInstanceList.append(methodInstance)
-
+        #Parameters list
+        for i in methodList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                if i != '' and elemList[0] != 'self' and parameter.match(elemList[3]):
+                    parameters.append(elemList)
+            except:
+                continue
+        #Function
+        for i in methodList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                methodInstance = function(file)
+                methodInstance.funcBody = ''
+                if i != '' and len(elemList) >= 6 and (member.match(elemList[3]) or func.match(elemList[3])) and number.search(elemList[4]) is not None and number.search(elemList[5]) is not None:
+                    methodInstance.name = elemList[0]
+                    methodInstance.parentFile = elemList[1]
+                    methodInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                            int(number.search(elemList[5]).group(0)))
+                    methodInstance.parentNumLoc = len(lines)
+                    for line in range(methodInstance.lines[0], methodInstance.lines[1]):
+                        methodInstance.funcBody = methodInstance.funcBody + (lines[line])
+                    methodInstance.funcId = funcId
+                    funcId += 1
+                    #Variables
+                    for var in variables:
+                        if methodInstance.lines[0] <= int(number.search(var[4]).group(0)) <= methodInstance.lines[1]:
+                            methodInstance.variableList.append(var[0])
+                            #Parameters
+                    for param in parameters:
+                        if methodInstance.lines[0] <= int(number.search(param[4]).group(0)) <= methodInstance.lines[1]:
+                            methodInstance.parameterList.append(param[0])
+                            methodInstanceList.append(methodInstance)
+            except:
+                continue
     return methodInstanceList
 
 #Shallow GO code parser using Universal-Ctags
 def parse_go_shallow(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-go=* --fields=neKSt "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-go=* --fields=neKSt "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -485,6 +522,9 @@ def parse_go_shallow(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -502,46 +542,50 @@ def parse_go_shallow(file):
     firstLine = 0
     funcId = 1
 
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        functionInstance = function(file)
-        functionInstance.funcBody = ''
-        if lines != "" and i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3])  and re.match(r"(end:)(\d+)", elemList[7]):
-            functionInstance.name = elemList[0]
-            functionInstance.parentFile = elemList[1]
-            functionInstance.parentNumLoc = len(lines)
-            if number.search(elemList[4]):
-                firstLine = int(number.search(elemList[4]).group(0))
-            elif number.search(elemList[5]):
-                firstLine = int(number.search(elemList[5]).group(0))
-            else:
+    if lines != "":
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                functionInstance = function(file)
+                functionInstance.funcBody = ''
+                if i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3])  and re.match(r"(end:)(\d+)", elemList[7]):
+                    functionInstance.name = elemList[0]
+                    functionInstance.parentFile = elemList[1]
+                    functionInstance.parentNumLoc = len(lines)
+                    if number.search(elemList[4]):
+                        firstLine = int(number.search(elemList[4]).group(0))
+                    elif number.search(elemList[5]):
+                        firstLine = int(number.search(elemList[5]).group(0))
+                    else:
+                        continue
+                    functionInstance.lines = (firstLine,
+                                            int(number.search(elemList[7]).group(0)))
+                    string = " "
+
+                    if len(lines)-1 >= functionInstance.lines[0]:
+                        if func.search(lines[functionInstance.lines[0]]):
+                            string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+                    if func.search(lines[functionInstance.lines[0]-1]):
+                        string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+                    elif func.search(lines[functionInstance.lines[0]-2]):
+                        string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+
+                    if funcBody.search(string):
+                        functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
+                    else:
+                        functionInstance.funcBody = " "
+                    functionInstance.funcId = funcId
+                    funcId += 1
+                    functionInstanceList.append(functionInstance)
+            except:
                 continue
-            functionInstance.lines = (firstLine,
-                                      int(number.search(elemList[7]).group(0)))
-            string = " "
-
-            if len(lines)-1 >= functionInstance.lines[0]:
-                if func.search(lines[functionInstance.lines[0]]):
-                    string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
-            if func.search(lines[functionInstance.lines[0]-1]):
-                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
-            elif func.search(lines[functionInstance.lines[0]-2]):
-                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
-
-            if funcBody.search(string):
-                functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
-            else:
-                functionInstance.funcBody = " "
-            functionInstance.funcId = funcId
-            funcId += 1
-            functionInstanceList.append(functionInstance)
     return functionInstanceList
 
 #Deep GO code parser using Universal-Ctags
 def parse_go_deep(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-go=* --fields=neKSt "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-go=* --fields=neKSt "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -551,6 +595,9 @@ def parse_go_deep(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -570,85 +617,88 @@ def parse_go_deep(file):
     firstLine = 0
     funcId = 1
 
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        functionInstance = function(file)
-        functionInstance.funcBody = ''
-        if lines != "" and i != ''  and len(elemList) >= 8 and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4]))  and re.match(r"(end:)(\d+)", elemList[7]):
-            functionInstance.name = elemList[0]
-            functionInstance.parentFile = elemList[1]
-            functionInstance.parentNumLoc = len(lines)
-            if number.search(elemList[4]):
-                firstLine = int(number.search(elemList[4]).group(0))
-            elif number.search(elemList[5]):
-                firstLine = int(number.search(elemList[5]).group(0))
-            else:
+    if lines != "":
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                functionInstance = function(file)
+                functionInstance.funcBody = ''
+                if i != ''  and len(elemList) >= 8 and (func.fullmatch(elemList[3]) or func.fullmatch(elemList[4]))  and re.match(r"(end:)(\d+)", elemList[7]):
+                    functionInstance.name = elemList[0]
+                    functionInstance.parentFile = elemList[1]
+                    functionInstance.parentNumLoc = len(lines)
+                    if number.search(elemList[4]):
+                        firstLine = int(number.search(elemList[4]).group(0))
+                    elif number.search(elemList[5]):
+                        firstLine = int(number.search(elemList[5]).group(0))
+                    else:
+                        continue
+
+                    functionInstance.lines = (firstLine,
+                                              int(number.search(elemList[7]).group(0)))
+                    string = " "
+
+                    if len(lines)-1 >= functionInstance.lines[0]:
+                        if func.search(lines[functionInstance.lines[0]]):
+                            string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
+                    if func.search(lines[functionInstance.lines[0]-1]):
+                        string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+                    elif func.search(lines[functionInstance.lines[0]-2]):
+                        string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
+
+                    if funcBody.search(string):
+                        functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
+                    else:
+                        functionInstance.funcBody = " "
+                    functionInstance.funcId = funcId
+                    funcId += 1
+                    #Data types
+                    elemList[5] = re.sub("(typeref:typename:)", "", elemList[5])
+                    if re.search(r'\(\s*([^)]+?)\s*\)', elemList[5]):
+                        for dType in re.search(r'\(\s*([^)]+?)\s*\)', elemList[5]).group(1).split(", "):
+                            functionInstance.dataTypeList.append(re.search("\S+$", dType).group(0))
+                            dType = re.sub("\S+$", "", dType)
+                            if dType:
+                                functionInstance.variableList.append(re.search("\S+", dType).group(0))
+                    elif re.match(r'^\S+$', elemList[5]):
+                        functionInstance.dataTypeList.append(re.match(r'^\S+$', elemList[5]).group(0))
+
+                    parameter = re.compile(r"^(\S+)")
+                    parameterSpace = []
+                    #Parameters
+                    elemList[6] = re.sub("(signature:)", "", elemList[6])
+                    if re.search(r'\(\s*([^)]+?)\s*\)', elemList[6]):
+                        parameterSpace = re.search(r'\(\s*([^)]+?)\s*\)', elemList[6]).group(1).split(", ")
+                        for elem in parameterSpace:
+                            elem = re.sub("(,)", "", elem)
+                            functionInstance.parameterList.append(parameter.search(elem).group(0))
+                            elem = re.sub(parameter, "", elem)
+                            if re.search("\S+", elem):
+                                functionInstance.dataTypeList.append(re.search("\S+", elem).group(0))
+
+                    #Variables
+                    filee = open("function.go", "w+", encoding="utf8", errors='ignore')
+                    filee.write(functionInstance.funcBody)
+                    filee.close()
+                    Command1 = '"' + str(pathToCtags) + '" -f - --kinds-go=* --fields=neKS "function.go"'
+                    shellOutput = subprocess.check_output(Command1, stderr=subprocess.STDOUT, shell=True).decode()
+                    varList = []
+                    varList = shellOutput.split('\n')
+                    for var in varList:
+                        elemsList = re.sub(r'[\t\s ]{2,}', '', var)
+                        elemsList = elemsList.split("\t")
+                        if var != '' and (varRe.match(elemsList[3]) or varRe.match(elemsList[4])):
+                            functionInstance.variableList.append(elemsList[0])
+                    functionInstanceList.append(functionInstance)
+            except:
                 continue
-
-            functionInstance.lines = (firstLine,
-                                      int(number.search(elemList[7]).group(0)))
-            string = " "
-
-            if len(lines)-1 >= functionInstance.lines[0]:
-                if func.search(lines[functionInstance.lines[0]]):
-                    string = string.join(lines[functionInstance.lines[0]:functionInstance.lines[1]])
-            if func.search(lines[functionInstance.lines[0]-1]):
-                string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
-            elif func.search(lines[functionInstance.lines[0]-2]):
-                string = string.join(lines[functionInstance.lines[0]-2:functionInstance.lines[1]])
-
-            if funcBody.search(string):
-                functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
-            else:
-                functionInstance.funcBody = " "
-            functionInstance.funcId = funcId
-            funcId += 1
-            #Data types
-            elemList[5] = re.sub("(typeref:typename:)", "", elemList[5])
-            if re.search(r'\(\s*([^)]+?)\s*\)', elemList[5]):
-                for dType in re.search(r'\(\s*([^)]+?)\s*\)', elemList[5]).group(1).split(", "):
-                    functionInstance.dataTypeList.append(re.search("\S+$", dType).group(0))
-                    dType = re.sub("\S+$", "", dType)
-                    if dType:
-                        functionInstance.variableList.append(re.search("\S+", dType).group(0))
-            elif re.match(r'^\S+$', elemList[5]):
-                functionInstance.dataTypeList.append(re.match(r'^\S+$', elemList[5]).group(0))
-
-            parameter = re.compile(r"^(\S+)")
-            parameterSpace = []
-            #Parameters
-            elemList[6] = re.sub("(signature:)", "", elemList[6])
-            if re.search(r'\(\s*([^)]+?)\s*\)', elemList[6]):
-                parameterSpace = re.search(r'\(\s*([^)]+?)\s*\)', elemList[6]).group(1).split(", ")
-                for elem in parameterSpace:
-                    elem = re.sub("(,)", "", elem)
-                    functionInstance.parameterList.append(parameter.search(elem).group(0))
-                    elem = re.sub(parameter, "", elem)
-                    if re.search("\S+", elem):
-                        functionInstance.dataTypeList.append(re.search("\S+", elem).group(0))
-
-            #Variables
-            filee = open("function.go", "w+", encoding="utf8", errors='ignore')
-            filee.write(functionInstance.funcBody)
-            filee.close()
-            Command1 = str(pathToCtags) + ' -f - --kinds-go=* --fields=neKS "function.go"'
-            shellOutput = subprocess.check_output(Command1, stderr=subprocess.STDOUT, shell=True).decode()
-            varList = []
-            varList = shellOutput.split('\n')
-            for var in varList:
-                elemsList = re.sub(r'[\t\s ]{2,}', '', var)
-                elemsList = elemsList.split("\t")
-                if var != '' and (varRe.match(elemsList[3]) or varRe.match(elemsList[4])):
-                    functionInstance.variableList.append(elemsList[0])
-            functionInstanceList.append(functionInstance)
-
     return functionInstanceList
 
 #Shallow JavaScript code parser using Universal-Ctags
 def parse_js_shallow(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-javascript=* --fields=neKS "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-javascript=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -660,10 +710,16 @@ def parse_js_shallow(file):
         print("Parser Error:", e)
         astString = ""
 
+    except:
+        astString = ""
+
     try:
         f = open(file, 'r', encoding="utf8", errors='ignore')
         lines = f.readlines()
     except:
+        lines = ""
+
+    if len(lines) <= 1:
         lines = ""
 
     functionList = astString.split('\n')
@@ -676,44 +732,48 @@ def parse_js_shallow(file):
     funcId = 1
     lines_count = 0
 
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        functionInstance = function(file)
-        functionInstance.funcBody = ''
-        if lines != "" and i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
-            functionInstance.name = elemList[0]
-            functionInstance.parentFile = elemList[1]
-            functionInstance.parentNumLoc = len(lines)
-            string = " "
-            string = string.join(lines[int(number.search(elemList[4]).group(0))-1:])
-            funcString = ""
-            ctr = 0
-            flag = 0
-            for c in string:
-                if c == "{":
-                    ctr = ctr + 1
-                    flag = 1
-                elif c == "}":
-                    ctr = ctr - 1
-                if ctr == 0 and flag == 1:
-                    break
-                elif ctr != 0 and flag == 1 and c != "{" and c != "}":
-                    funcString = funcString + c
+    if lines != "":
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                functionInstance = function(file)
+                functionInstance.funcBody = ''
+                if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
+                    functionInstance.name = elemList[0]
+                    functionInstance.parentFile = elemList[1]
+                    functionInstance.parentNumLoc = len(lines)
+                    string = " "
+                    string = string.join(lines[int(number.search(elemList[4]).group(0))-1:])
+                    funcString = ""
+                    ctr = 0
+                    flag = 0
+                    for c in string:
+                        if c == "{":
+                            ctr = ctr + 1
+                            flag = 1
+                        elif c == "}":
+                            ctr = ctr - 1
+                        if ctr == 0 and flag == 1:
+                            break
+                        elif ctr != 0 and flag == 1 and c != "{" and c != "}":
+                            funcString = funcString + c
 
-            functionInstance.funcBody = functionInstance.funcBody + funcString
-            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                      int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
-            functionInstance.funcId = funcId
-            funcId += 1
-            functionInstanceList.append(functionInstance)
-
+                    functionInstance.funcBody = functionInstance.funcBody + funcString
+                    functionInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                              int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
+                    functionInstance.funcId = funcId
+                    funcId += 1
+                    if len(functionInstance.funcBody) <= 256:
+                        functionInstanceList.append(functionInstance)
+            except:
+                continue
     return functionInstanceList
 
 #Shallow JavaScript code parser using Universal-Ctags
 def parse_js_deep(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-javascript=* --fields=neKS "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-javascript=* --fields=neKS "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
     functionInstanceList = []
@@ -725,10 +785,16 @@ def parse_js_deep(file):
         print("Parser Error:", e)
         astString = ""
 
+    except:
+        astString = ""
+
     try:
         f = open(file, 'r', encoding="utf8", errors='ignore')
         lines = f.readlines()
     except:
+        lines = ""
+
+    if len(lines) <= 1:
         lines = ""
 
     functionList = astString.split('\n')
@@ -743,62 +809,67 @@ def parse_js_deep(file):
     string = " "
     funcId = 1
     lines_count = 0
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        functionInstance = function(file)
-        functionInstance.funcBody = ''
-        if lines != "" and i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
-            functionInstance.name = elemList[0]
-            functionInstance.parentFile = elemList[1]
-            functionInstance.parentNumLoc = len(lines)
-            string = " "
-            string = string.join(lines[int(number.search(elemList[4]).group(0))-1:])
-            funcString = ""
-            ctr = 0
-            flag = 0
-            for c in string:
-                if c == "{":
-                    ctr = ctr + 1
-                    flag = 1
-                elif c == "}":
-                    ctr = ctr - 1
-                if ctr == 0 and flag == 1:
-                    break
-                elif ctr != 0 and flag == 1 and c != "{" and c != "}":
-                    funcString = funcString + c
+    if lines != "":
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                functionInstance = function(file)
+                functionInstance.funcBody = ''
+                if i != '' and len(elemList) >= 6 and (func.fullmatch(elemList[3]) or method.fullmatch(elemList[3])):
+                    functionInstance.name = elemList[0]
+                    functionInstance.parentFile = elemList[1]
+                    functionInstance.parentNumLoc = len(lines)
+                    string = " "
+                    string = string.join(lines[int(number.search(elemList[4]).group(0))-1:])
+                    funcString = ""
+                    ctr = 0
+                    flag = 0
+                    for c in string:
+                        if c == "{":
+                            ctr = ctr + 1
+                            flag = 1
+                        elif c == "}":
+                            ctr = ctr - 1
+                        if ctr == 0 and flag == 1:
+                            break
+                        elif ctr != 0 and flag == 1 and c != "{" and c != "}":
+                            funcString = funcString + c
 
-            functionInstance.funcBody = functionInstance.funcBody + funcString
-            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                      int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
-            functionInstance.funcId = funcId
-            funcId += 1
+                    functionInstance.funcBody = functionInstance.funcBody + funcString
+                    functionInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                              int(number.search(elemList[4]).group(0)) + functionInstance.funcBody.count("\n"))
+                    functionInstance.funcId = funcId
+                    funcId += 1
 
-            #Parameters
-            if parameter.search(elemList[5]):
-                functionInstance.parameterList.append(parameter.search(elemList[5]).group(1))
+                    #Parameters
+                    if parameter.search(elemList[5]):
+                        functionInstance.parameterList.append(parameter.search(elemList[5]).group(1))
 
-            #Variables
-            filee = open("function.js", "w+", encoding="utf8", errors='ignore')
-            filee.write(functionInstance.funcBody)
-            filee.close()
-            Command1 = str(pathToCtags) + ' -f - --kinds-javascript=* --fields=neKS function.js'
-            shellOutput = subprocess.check_output(Command1, stderr=subprocess.STDOUT, shell=True).decode()
-            varList = []
-            varList = shellOutput.split('\n')
-            for var in varList:
-                elemsList = re.sub(r'[\t\s ]{2,}', '', var)
-                elemsList = elemsList.split("\t")
-                if var != '' and len(elemsList) >= 4 and ((varRe.fullmatch(elemsList[3]) or variableRe.fullmatch(elemsList[3]))):
-                    functionInstance.variableList.append(elemsList[0])
+                    #Variables
+                    filee = open("function.js", "w+", encoding="utf8", errors='ignore')
+                    filee.write(functionInstance.funcBody)
+                    filee.close()
+                    Command1 = '"' + str(pathToCtags) + '" -f - --kinds-javascript=* --fields=neKS function.js'
+                    shellOutput = subprocess.check_output(Command1, stderr=subprocess.STDOUT, shell=True).decode()
+                    varList = []
+                    varList = shellOutput.split('\n')
+                    for var in varList:
+                        elemsList = re.sub(r'[\t\s ]{2,}', '', var)
+                        elemsList = elemsList.split("\t")
+                        if var != '' and len(elemsList) >= 4 and ((varRe.fullmatch(elemsList[3]) or variableRe.fullmatch(elemsList[3]))):
+                            functionInstance.variableList.append(elemsList[0])
 
-            functionInstanceList.append(functionInstance)
+                    if len(functionInstance.funcBody) <= 256:
+                        functionInstanceList.append(functionInstance)
+            except:
+                continue
     return functionInstanceList
 
 
 def parse_c_shallow(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-C=* --fields=neKSt "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-C=* --fields=neKSt "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -807,6 +878,9 @@ def parse_c_shallow(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -823,31 +897,35 @@ def parse_c_shallow(file):
     funcId = 1
     functionInstanceList = []
 
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        functionInstance = function(file)
-        functionInstance.funcBody = ''
-        if lines != "" and i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3]):
-            functionInstance.name = elemList[0]
-            functionInstance.parentFile = elemList[1]
-            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[7]).group(0)))
-            functionInstance.parentNumLoc = len(lines)
-            string = ""
-            string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
-            if funcBody.search(string):
-                functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
-            else:
-                functionInstance.funcBody = " "
-            functionInstance.funcId = funcId
-            funcId+=1
-            functionInstanceList.append(functionInstance)
+    if lines != "":
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                functionInstance = function(file)
+                functionInstance.funcBody = ''
+                if i != '' and len(elemList) >= 8 and func.fullmatch(elemList[3]):
+                    functionInstance.name = elemList[0]
+                    functionInstance.parentFile = elemList[1]
+                    functionInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                            int(number.search(elemList[7]).group(0)))
+                    functionInstance.parentNumLoc = len(lines)
+                    string = ""
+                    string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+                    if funcBody.search(string):
+                        functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
+                    else:
+                        functionInstance.funcBody = " "
+                    functionInstance.funcId = funcId
+                    funcId+=1
+                    functionInstanceList.append(functionInstance)
+            except:
+                continue
     return functionInstanceList
 
 def parse_c_deep(file):
     pathToCtags = resource_path("ctags")
-    Command = str(pathToCtags) + ' -f - --kinds-C=* --fields=neKSt "' + file + '"'
+    Command = '"' + str(pathToCtags) + '" -f - --kinds-C=* --fields=neKSt "' + file + '"'
     global delimiter
     delimiter = "\r\0?\r?\0\r"
 
@@ -856,6 +934,9 @@ def parse_c_deep(file):
 
     except subprocess.CalledProcessError as e:
         print("Parser Error:", e)
+        astString = ""
+
+    except:
         astString = ""
 
     try:
@@ -879,63 +960,74 @@ def parse_c_deep(file):
     variables = []
     parameters = []
     dataTypes = []
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        if i != '' and len(elemList) >= 6 and (local.fullmatch(elemList[3]) or local.fullmatch(elemList[4])):
-            variables.append(elemList)
 
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        if i != '' and len(elemList) >= 6 and (parameter.match(elemList[3]) or parameter.fullmatch(elemList[4])):
-            parameters.append(elemList)
+    if lines != "":
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                if i != '' and len(elemList) >= 6 and (local.fullmatch(elemList[3]) or local.fullmatch(elemList[4])):
+                    variables.append(elemList)
+            except:
+                continue
 
-    for i in functionList:
-        elemList = re.sub(r'[\t\s ]{2,}', '', i)
-        elemList = elemList.split("\t")
-        functionInstance = function(file)
-        functionInstance.funcBody = ''
-        if lines != "" and i != ''  and len(elemList) >= 8 and func.fullmatch(elemList[3]):
-            #Method body
-            functionInstance.name = elemList[0]
-            functionInstance.parentFile = elemList[1]
-            functionInstance.lines = (int(number.search(elemList[4]).group(0)),
-                                    int(number.search(elemList[7]).group(0)))
-            functionInstance.parentNumLoc = len(lines)
-            string = ""
-            string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
-            if funcBody.search(string):
-                functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
-            else:
-                functionInstance.funcBody = " "
-            lineNumber = 0
-            #Parameters
-            for param in parameters:
-                if number.search(param[4]):
-                    lineNumber = int(number.search(param[4]).group(0))
-                elif number.search(param[5]):
-                    lineNumber = int(number.search(param[5]).group(0))
-                if len(param) >= 4 and functionInstance.lines[0] <= int(lineNumber) <= functionInstance.lines[1]:
-                    functionInstance.parameterList.append(param[0])
-                    if len(param) >= 6 and dataType.search(param[5]):
-                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", param[5])))
-                    elif len(param) >= 7 and dataType.search(param[6]):
-                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", param[6])))
-            #Variables
-            for variable in variables:
-                if number.search(variable[4]):
-                    lineNumber = int(number.search(variable[4]).group(0))
-                elif number.search(variable[5]):
-                    lineNumber = int(number.search(variable[5]).group(0))
-                if len(variable) >= 4 and functionInstance.lines[0] <= int(lineNumber) <= functionInstance.lines[1]:
-                    functionInstance.variableList.append(variable[0])
-                    if len(variable) >= 6 and dataType.search(variable[5]):
-                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[5])))
-                    elif len(variable) >= 7 and dataType.search(variable[6]):
-                        functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[6])))
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                if i != '' and len(elemList) >= 6 and (parameter.match(elemList[3]) or parameter.fullmatch(elemList[4])):
+                    parameters.append(elemList)
+            except:
+                continue
 
-            functionInstance.funcId = funcId
-            funcId+=1
-            functionInstanceList.append(functionInstance)
+        for i in functionList:
+            try:
+                elemList = re.sub(r'[\t\s ]{2,}', '', i)
+                elemList = elemList.split("\t")
+                functionInstance = function(file)
+                functionInstance.funcBody = ''
+                if i != ''  and len(elemList) >= 8 and func.fullmatch(elemList[3]):
+                    #Method body
+                    functionInstance.name = elemList[0]
+                    functionInstance.parentFile = elemList[1]
+                    functionInstance.lines = (int(number.search(elemList[4]).group(0)),
+                                            int(number.search(elemList[7]).group(0)))
+                    functionInstance.parentNumLoc = len(lines)
+                    string = ""
+                    string = string.join(lines[functionInstance.lines[0]-1:functionInstance.lines[1]])
+                    if funcBody.search(string):
+                        functionInstance.funcBody = functionInstance.funcBody + funcBody.search(string).group(1)
+                    else:
+                        functionInstance.funcBody = " "
+                    lineNumber = 0
+                    #Parameters
+                    for param in parameters:
+                        if number.search(param[4]):
+                            lineNumber = int(number.search(param[4]).group(0))
+                        elif number.search(param[5]):
+                            lineNumber = int(number.search(param[5]).group(0))
+                        if len(param) >= 4 and functionInstance.lines[0] <= int(lineNumber) <= functionInstance.lines[1]:
+                            functionInstance.parameterList.append(param[0])
+                            if len(param) >= 6 and dataType.search(param[5]):
+                                functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", param[5])))
+                            elif len(param) >= 7 and dataType.search(param[6]):
+                                functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", param[6])))
+                    #Variables
+                    for variable in variables:
+                        if number.search(variable[4]):
+                            lineNumber = int(number.search(variable[4]).group(0))
+                        elif number.search(variable[5]):
+                            lineNumber = int(number.search(variable[5]).group(0))
+                        if len(variable) >= 4 and functionInstance.lines[0] <= int(lineNumber) <= functionInstance.lines[1]:
+                            functionInstance.variableList.append(variable[0])
+                            if len(variable) >= 6 and dataType.search(variable[5]):
+                                functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[5])))
+                            elif len(variable) >= 7 and dataType.search(variable[6]):
+                                functionInstance.dataTypeList.append(re.sub(r" \*$", "", dataType.sub("", variable[6])))
+
+                    functionInstance.funcId = funcId
+                    funcId+=1
+                    functionInstanceList.append(functionInstance)
+            except:
+                continue
     return functionInstanceList
