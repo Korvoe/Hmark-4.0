@@ -67,11 +67,8 @@ def loadSource(rootDirectory):
     possible_ext = ('.c', '.cpp', '.cc', '.c++', '.cxx', '.java', '.py', '.go', '.js')
     for path, dirs, files in walkList:
         for fileName in files:
-            ext = fileName.lower()
-            if (ext.endswith('.c') or ext.endswith('.cpp')
-            or ext.endswith('.cc') or ext.endswith('.c++')
-            or ext.endswith('.cxx') or ext.endswith('.java')
-            or ext.endswith('.py')) or ext.endswith('.go') or ext.endswith('.js'):
+            name, ext = os.path.splitext(fileName)
+            if (ext in possible_ext):
                 absPathWithFileName = path.replace('\\', '/') + '/' + fileName
                 absPathWithFileName = absPathWithFileName.strip('\n')
                 if maxFileSizeInBytes is not None:
